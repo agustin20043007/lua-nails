@@ -2,17 +2,11 @@ import { redirect } from "next/navigation";
 import { getUsuarioActual } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { cerrarSesion } from "@/app/actions/auth";
-import Agenda, { type TurnoAgenda } from "./agenda";
+import { NOMBRES_MES, iso, primerDiaDelMes, sumarMeses, ultimoDiaDelMes } from "@/lib/calendario";
+import Calendario, { type TurnoAgenda } from "./agenda";
 import "./admin.css";
 
-const DIAS_A_MOSTRAR = 7;
-
-const iso = (d: Date) =>
-  d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
-const aMin = (hhmm: string) => {
-  const [h, m] = hhmm.split(":").map(Number);
-  return h * 60 + m;
-};
+const capitalizar = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 type FilaTurnoDB = {
   id: string;
@@ -28,31 +22,39 @@ type FilaTurnoDB = {
   retiro: { nombre: string } | null;
 };
 
-export default async function AdminPage() {
+const aMin = (hhmm: string) => {
+  const [h, m] = hhmm.split(":").map(Number);
+  return h * 60 + m;
+};
+
+export default async function AdminPage({ searchParams }: { searchParams: Promise<{ mes?: string }> }) {
   const usuario = await getUsuarioActual();
   if (!usuario) redirect("/ingresar");
   if (usuario.rol !== "admin") redirect("/turnos");
 
-  const supabase = await createClient();
-
   const hoy = new Date();
-  const limite = new Date(hoy);
-  limite.setDate(hoy.getDate() + (DIAS_A_MOSTRAR - 1));
-
   const hoyISO = iso(hoy);
-  const dias = Array.from({ length: DIAS_A_MOSTRAR }, (_, i) => {
-    const d = new Date(hoy);
-    d.setDate(hoy.getDate() + i);
-    return iso(d);
-  });
 
+  const { mes: mesParam } = await searchParams;
+  let anio = hoy.getFullYear();
+  let mes = hoy.getMonth() + 1;
+  if (mesParam && /^\d{4}-\d{2}$/.test(mesParam)) {
+    const [a, m] = mesParam.split("-").map(Number);
+    anio = a;
+    mes = m;
+  }
+
+  const anterior = sumarMeses(anio, mes, -1);
+  const siguiente = sumarMeses(anio, mes, 1);
+
+  const supabase = await createClient();
   const { data } = await supabase
     .from("turnos")
     .select(
       "id, fecha, hora_inicio, duracion_min, precio_total, nombre, telefono, nota, estado, servicio:servicios(nombre, categoria:categorias_servicio(nombre)), retiro:retiros(nombre)",
     )
-    .gte("fecha", hoyISO)
-    .lte("fecha", iso(limite))
+    .gte("fecha", primerDiaDelMes(anio, mes))
+    .lte("fecha", ultimoDiaDelMes(anio, mes))
     .order("fecha", { ascending: true })
     .order("hora_inicio", { ascending: true });
 
@@ -93,7 +95,16 @@ export default async function AdminPage() {
         </div>
         <p className="ln-admin-sub">Lua Nails · Panel de turnos</p>
 
-        <Agenda turnos={turnos} dias={dias} hoyISO={hoyISO} />
+        <Calendario
+          key={`${anio}-${mes}`}
+          turnos={turnos}
+          anio={anio}
+          mes={mes}
+          mesLabel={`${capitalizar(NOMBRES_MES[mes - 1])} ${anio}`}
+          hoyISO={hoyISO}
+          mesAnteriorHref={`/admin?mes=${anterior.anio}-${String(anterior.mes).padStart(2, "0")}`}
+          mesSiguienteHref={`/admin?mes=${siguiente.anio}-${String(siguiente.mes).padStart(2, "0")}`}
+        />
       </div>
     </div>
   );

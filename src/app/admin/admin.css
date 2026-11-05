@@ -56,37 +56,92 @@
   margin-bottom: 20px;
 }
 
-.ln-admin-tabs {
+.ln-admin-cal-header {
   display: flex;
-  gap: 8px;
-  margin-bottom: 20px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
 }
-.ln-admin-tab {
+.ln-admin-cal-mes-label {
+  font-family: var(--font-cormorant), serif;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--rosa-osc);
+  text-transform: capitalize;
+}
+.ln-admin-cal-nav {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
   border: 1px solid var(--borde);
   background: #fff;
   color: var(--rosa-osc);
+  font-weight: 700;
+  text-decoration: none;
+  display: grid;
+  place-items: center;
+}
+
+.ln-admin-cal-semana {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--suave);
+  margin-bottom: 6px;
+}
+
+.ln-admin-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  margin-bottom: 24px;
+}
+.ln-admin-cal-dia {
+  aspect-ratio: 1;
+  border-radius: 12px;
+  border: 1px solid var(--borde);
+  background: #fff;
   font: inherit;
   font-weight: 600;
-  font-size: 13px;
-  padding: 9px 18px;
-  border-radius: 999px;
+  color: inherit;
   cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
 }
-.ln-admin-tab.ln-admin-tab-activo {
+.ln-admin-cal-dia.ln-admin-cal-hoy {
+  border-color: var(--rosa);
+}
+.ln-admin-cal-dia.ln-admin-cal-sel {
   background: var(--rosa);
   border-color: var(--rosa);
   color: #fff;
 }
+.ln-admin-cal-vacio {
+  border: 0;
+  background: transparent;
+}
+.ln-admin-cal-punto {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--rosa);
+}
+.ln-admin-cal-dia.ln-admin-cal-sel .ln-admin-cal-punto {
+  background: #fff;
+}
 
-.ln-admin-dia {
+.ln-admin-dia-titulo {
   font-family: var(--font-cormorant), serif;
   font-size: 20px;
   font-weight: 600;
   color: var(--rosa-osc);
-  margin: 22px 0 10px;
-}
-.ln-admin-dia:first-child {
-  margin-top: 0;
+  margin: 0 0 10px;
 }
 
 .ln-admin-turno {

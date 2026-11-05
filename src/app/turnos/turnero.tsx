@@ -5,6 +5,7 @@ import { Cormorant_Garamond, Montserrat } from "next/font/google";
 import Link from "next/link";
 import { cerrarSesion } from "@/app/actions/auth";
 import { crearTurno, type EstadoTurno } from "@/app/actions/turnos";
+import { DIAS_SEMANA_CORTO, NOMBRES_MES, grillaMes, iso, sumarMeses, ultimoDiaDelMes } from "@/lib/calendario";
 import "./page.css";
 
 // El pipeline de Tailwind/Turbopack de este proyecto no genera el mapa de
@@ -36,9 +37,14 @@ const styles = {
   precio: "ln-precio",
   extra: "ln-extra",
   volver: "ln-volver",
-  mes: "ln-mes",
-  dias: "ln-dias",
-  dia: "ln-dia",
+  calHeader: "ln-cal-header",
+  calMesLabel: "ln-cal-mes-label",
+  calNav: "ln-cal-nav",
+  calSemana: "ln-cal-semana",
+  calGrid: "ln-cal-grid",
+  calDia: "ln-cal-dia",
+  calHoy: "ln-cal-hoy",
+  calVacio: "ln-cal-vacio",
   horas: "ln-horas",
   vacio: "ln-vacio",
   hora: "ln-hora",
@@ -70,7 +76,6 @@ const cormorant = Cormorant_Garamond({
 
 const WHATSAPP = "5493413608338"; // 549 + característica + número, sin 0 ni 15
 const INTERVALO = 30; // cada cuántos minutos arranca un turno
-const DIAS_A_MOSTRAR = 21;
 
 export type ServicioDB = { id: number; nombre: string; precio: number; duracionMin: number };
 export type CategoriaDB = { id: number; nombre: string; nota: string | null; sinRetiro: boolean; items: ServicioDB[] };
@@ -91,8 +96,6 @@ const aMin = (hhmm: string) => {
 };
 const aHora = (min: number) =>
   String(Math.floor(min / 60)).padStart(2, "0") + ":" + String(min % 60).padStart(2, "0");
-const iso = (d: Date) =>
-  d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
 const durTxt = (m: number) => (m < 60 ? m + " min" : Math.floor(m / 60) + " h" + (m % 60 ? " " + (m % 60) + " min" : ""));
 const capitalizar = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
@@ -124,6 +127,7 @@ export default function Turnero({ nombre: nombreCuenta, telefono: telCuenta, cat
     categorias.map((_, i) => i === 0),
   );
   const [intento, setIntento] = useState(0);
+  const [mesOffset, setMesOffset] = useState(0); // 0 = este mes, 1 = el que sigue
   const mounted = useSyncExternalStore(sinSuscripcion, esCliente, esServidor);
 
   const servicioActual = useMemo((): ServicioActual | null => {
@@ -188,25 +192,34 @@ export default function Turnero({ nombre: nombreCuenta, telefono: telCuenta, cat
     setDia(null);
     setHora(null);
     setCategoriasAbiertas(categorias.map((_, i) => i === 0));
+    setMesOffset(0);
     setIntento((n) => n + 1);
     irA(1);
   }
 
-  let diasList: { k: string; d: Date; abierto: boolean }[] = [];
-  let mesLabel = "";
+  // El horario de reserva llega hasta fin del mes que sigue: dos meses de
+  // calendario para elegir, nunca menos.
+  let semanas: (string | null)[][] = [];
+  let mesLabelCal = "";
+  let hoyISO = "";
+  let horizonHastaISO = "";
   let horasList: { t: number; libre: boolean }[] = [];
   if (mounted) {
     const hoy = new Date();
     hoy.setHours(0, 0, 0, 0);
-    diasList = Array.from({ length: DIAS_A_MOSTRAR }, (_, i) => {
-      const d = new Date(hoy);
-      d.setDate(hoy.getDate() + i);
-      const libres = horasLibres(d);
-      return { k: iso(d), d, abierto: !!horarios[d.getDay()] && libres.length > 0 };
-    });
-    const mesRef = dia ? new Date(`${dia}T12:00`) : hoy;
-    mesLabel = capitalizar(mesRef.toLocaleDateString("es-AR", { month: "long", year: "numeric" }));
+    hoyISO = iso(hoy);
+    const siguiente = sumarMeses(hoy.getFullYear(), hoy.getMonth() + 1, 1);
+    horizonHastaISO = ultimoDiaDelMes(siguiente.anio, siguiente.mes);
+    const mostrado = sumarMeses(hoy.getFullYear(), hoy.getMonth() + 1, mesOffset);
+    semanas = grillaMes(mostrado.anio, mostrado.mes);
+    mesLabelCal = `${capitalizar(NOMBRES_MES[mostrado.mes - 1])} ${mostrado.anio}`;
     horasList = dia ? horasLibres(new Date(`${dia}T12:00`)) : [];
+  }
+
+  function diaHabilitado(fecha: string): boolean {
+    if (!hoyISO || fecha < hoyISO || fecha > horizonHastaISO) return false;
+    const d = new Date(`${fecha}T12:00`);
+    return !!horarios[d.getDay()] && horasLibres(d).length > 0;
   }
 
   let barraDetalle = "";
@@ -324,23 +337,51 @@ export default function Turnero({ nombre: nombreCuenta, telefono: telCuenta, cat
               ← Cambiar servicio
             </button>
             <h2>Elegí el día</h2>
-            <div className={styles.mes}>{mesLabel}</div>
-            <div className={styles.dias}>
-              {diasList.map((d, i) => (
-                <button
-                  key={d.k}
-                  type="button"
-                  className={`${styles.dia} ${dia === d.k ? styles.sel : ""}`}
-                  disabled={!d.abierto}
-                  onClick={() => {
-                    setDia(d.k);
-                    setHora(null);
-                  }}
-                >
-                  <small>{i === 0 ? "Hoy" : d.d.toLocaleDateString("es-AR", { weekday: "short" }).replace(".", "")}</small>
-                  <strong>{d.d.getDate()}</strong>
-                </button>
+            <div className={styles.calHeader}>
+              <button
+                type="button"
+                className={styles.calNav}
+                disabled={mesOffset === 0}
+                onClick={() => setMesOffset((n) => n - 1)}
+                aria-label="Mes anterior"
+              >
+                ‹
+              </button>
+              <div className={styles.calMesLabel}>{mesLabelCal}</div>
+              <button
+                type="button"
+                className={styles.calNav}
+                disabled={mesOffset === 1}
+                onClick={() => setMesOffset((n) => n + 1)}
+                aria-label="Mes siguiente"
+              >
+                ›
+              </button>
+            </div>
+            <div className={styles.calSemana}>
+              {DIAS_SEMANA_CORTO.map((d) => (
+                <div key={d}>{d}</div>
               ))}
+            </div>
+            <div className={styles.calGrid}>
+              {semanas.flat().map((fecha, i) =>
+                fecha ? (
+                  <button
+                    key={fecha}
+                    type="button"
+                    className={`${styles.calDia} ${fecha === hoyISO ? styles.calHoy : ""} ${dia === fecha ? styles.sel : ""}`}
+                    disabled={!diaHabilitado(fecha)}
+                    onClick={() => {
+                      setDia(fecha);
+                      setHora(null);
+                    }}
+                  >
+                    {Number(fecha.slice(-2))}
+                  </button>
+                ) : (
+                  <div key={`vacio-${i}`} className={`${styles.calDia} ${styles.calVacio}`} />
+                ),
+              )}
             </div>
             <h2 style={{ marginTop: 18 }}>Elegí el horario</h2>
             <div className={styles.horas}>

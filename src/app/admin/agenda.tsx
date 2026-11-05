@@ -1,8 +1,10 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import Link from "next/link";
 import { useFormStatus } from "react-dom";
 import { cancelarTurno } from "@/app/actions/admin";
+import { DIAS_SEMANA_CORTO, grillaMes } from "@/lib/calendario";
 
 export type TurnoAgenda = {
   id: string;
@@ -23,51 +25,93 @@ const aHora = (min: number) =>
 const durTxt = (m: number) => (m < 60 ? m + " min" : Math.floor(m / 60) + " h" + (m % 60 ? " " + (m % 60) + " min" : ""));
 const capitalizar = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
-export default function Agenda({ turnos, dias, hoyISO }: { turnos: TurnoAgenda[]; dias: string[]; hoyISO: string }) {
-  const [vista, setVista] = useState<"hoy" | "semana">("hoy");
+type Props = {
+  turnos: TurnoAgenda[];
+  anio: number;
+  mes: number; // 1-12
+  mesLabel: string;
+  hoyISO: string;
+  mesAnteriorHref: string;
+  mesSiguienteHref: string;
+};
 
-  const diasAMostrar = vista === "hoy" ? [hoyISO] : dias;
+export default function Calendario({ turnos, anio, mes, mesLabel, hoyISO, mesAnteriorHref, mesSiguienteHref }: Props) {
+  const semanas = grillaMes(anio, mes);
+
+  const diaConTurnos = (fecha: string) => turnos.some((t) => t.fecha === fecha);
+  const hoyEstaEnEsteMes = estaEnMes(hoyISO, anio, mes);
+  const diaInicial = hoyEstaEnEsteMes ? hoyISO : semanas.flat().find((f) => f && diaConTurnos(f)) ?? null;
+  const [diaSeleccionado, setDiaSeleccionado] = useState<string | null>(diaInicial);
+
+  const turnosDelDia = diaSeleccionado
+    ? turnos.filter((t) => t.fecha === diaSeleccionado).sort((a, b) => a.horaInicio - b.horaInicio)
+    : [];
 
   return (
     <div>
-      <div className="ln-admin-tabs">
-        <button
-          type="button"
-          className={`ln-admin-tab ${vista === "hoy" ? "ln-admin-tab-activo" : ""}`}
-          onClick={() => setVista("hoy")}
-        >
-          Hoy
-        </button>
-        <button
-          type="button"
-          className={`ln-admin-tab ${vista === "semana" ? "ln-admin-tab-activo" : ""}`}
-          onClick={() => setVista("semana")}
-        >
-          Esta semana
-        </button>
+      <div className="ln-admin-cal-header">
+        <Link href={mesAnteriorHref} className="ln-admin-cal-nav" aria-label="Mes anterior">
+          ‹
+        </Link>
+        <div className="ln-admin-cal-mes-label">{mesLabel}</div>
+        <Link href={mesSiguienteHref} className="ln-admin-cal-nav" aria-label="Mes siguiente">
+          ›
+        </Link>
       </div>
 
-      {diasAMostrar.map((fecha) => {
-        const turnosDelDia = turnos.filter((t) => t.fecha === fecha).sort((a, b) => a.horaInicio - b.horaInicio);
-        const d = new Date(`${fecha}T12:00`);
-        const esHoy = fecha === hoyISO;
-        const etiqueta = esHoy
-          ? "Hoy"
-          : capitalizar(d.toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" }));
+      <div className="ln-admin-cal-semana">
+        {DIAS_SEMANA_CORTO.map((d) => (
+          <div key={d}>{d}</div>
+        ))}
+      </div>
 
-        return (
-          <div key={fecha}>
-            <div className="ln-admin-dia">{etiqueta}</div>
-            {turnosDelDia.length === 0 ? (
-              <div className="ln-admin-vacio">No hay turnos.</div>
-            ) : (
-              turnosDelDia.map((t) => <FilaTurno key={t.id} turno={t} />)
-            )}
-          </div>
-        );
-      })}
+      <div className="ln-admin-cal-grid">
+        {semanas.flat().map((fecha, i) =>
+          fecha ? (
+            <button
+              key={fecha}
+              type="button"
+              className={`ln-admin-cal-dia ${fecha === hoyISO ? "ln-admin-cal-hoy" : ""} ${diaSeleccionado === fecha ? "ln-admin-cal-sel" : ""}`}
+              onClick={() => setDiaSeleccionado(fecha)}
+            >
+              <span>{Number(fecha.slice(-2))}</span>
+              {diaConTurnos(fecha) && <span className="ln-admin-cal-punto" />}
+            </button>
+          ) : (
+            <div key={`vacio-${i}`} className="ln-admin-cal-dia ln-admin-cal-vacio" />
+          ),
+        )}
+      </div>
+
+      {diaSeleccionado ? (
+        <>
+          <h2 className="ln-admin-dia-titulo">
+            {diaSeleccionado === hoyISO
+              ? "Hoy"
+              : capitalizar(
+                  new Date(`${diaSeleccionado}T12:00`).toLocaleDateString("es-AR", {
+                    weekday: "long",
+                    day: "numeric",
+                    month: "long",
+                  }),
+                )}
+          </h2>
+          {turnosDelDia.length === 0 ? (
+            <div className="ln-admin-vacio">No hay turnos.</div>
+          ) : (
+            turnosDelDia.map((t) => <FilaTurno key={t.id} turno={t} />)
+          )}
+        </>
+      ) : (
+        <div className="ln-admin-vacio">Elegí un día para ver los turnos.</div>
+      )}
     </div>
   );
+}
+
+function estaEnMes(fecha: string, anio: number, mes: number) {
+  const [a, m] = fecha.split("-").map(Number);
+  return a === anio && m === mes;
 }
 
 function FilaTurno({ turno }: { turno: TurnoAgenda }) {
