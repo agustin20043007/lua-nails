@@ -2,8 +2,7 @@
 
 import { useActionState, useMemo, useState, useSyncExternalStore } from "react";
 import { Cormorant_Garamond, Montserrat } from "next/font/google";
-import Link from "next/link";
-import { cerrarSesion } from "@/app/actions/auth";
+import MenuCliente from "@/app/menu-cliente";
 import { crearTurno, type EstadoTurno } from "@/app/actions/turnos";
 import { DIAS_SEMANA_CORTO, NOMBRES_MES, grillaMes, iso, sumarMeses, ultimoDiaDelMes } from "@/lib/calendario";
 import "./page.css";
@@ -55,7 +54,6 @@ const styles = {
   resumen: "ln-resumen",
   btn: "ln-btn",
   cuenta: "ln-cuenta",
-  cuentaBtn: "ln-cuenta-btn",
   btnWa: "ln-btn-wa",
   btnSec: "ln-btn-sec",
   barra: "ln-barra",
@@ -241,10 +239,7 @@ export default function Turnero({ nombre: nombreCuenta, telefono: telCuenta, cat
     <div className={`${styles.page} ${montserrat.variable} ${cormorant.variable}`}>
       <div className={styles.wrap}>
         <div className={styles.cuenta}>
-          Hola, {nombreCuenta.split(" ")[0]} · <Link href="/mis-turnos">Mis turnos</Link> ·{" "}
-          <button type="button" className={styles.cuentaBtn} onClick={() => cerrarSesion()}>
-            Cerrar sesión
-          </button>
+          <MenuCliente nombre={nombreCuenta} />
         </div>
         <header>
           <div className={styles.luna}>☾</div>

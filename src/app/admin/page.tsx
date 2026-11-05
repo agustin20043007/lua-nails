@@ -1,10 +1,6 @@
-import { redirect } from "next/navigation";
-import { getUsuarioActual } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { cerrarSesion } from "@/app/actions/auth";
 import { NOMBRES_MES, iso, primerDiaDelMes, sumarMeses, ultimoDiaDelMes } from "@/lib/calendario";
 import Calendario, { type TurnoAgenda } from "./agenda";
-import "./admin.css";
 
 const capitalizar = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
@@ -28,10 +24,6 @@ const aMin = (hhmm: string) => {
 };
 
 export default async function AdminPage({ searchParams }: { searchParams: Promise<{ mes?: string }> }) {
-  const usuario = await getUsuarioActual();
-  if (!usuario) redirect("/ingresar");
-  if (usuario.rol !== "admin") redirect("/turnos");
-
   const hoy = new Date();
   const hoyISO = iso(hoy);
 
@@ -82,30 +74,20 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   });
 
   return (
-    <div className="ln-admin">
-      <div className="ln-admin-wrap">
-        <div className="ln-admin-header">
-          <h1>Agenda</h1>
-          <div className="ln-admin-cuenta">
-            Hola, {usuario.nombre.split(" ")[0]} ·{" "}
-            <form action={cerrarSesion} style={{ display: "inline" }}>
-              <button type="submit">Cerrar sesión</button>
-            </form>
-          </div>
-        </div>
-        <p className="ln-admin-sub">Lua Nails · Panel de turnos</p>
+    <div>
+      <h1>Agenda</h1>
+      <p className="ln-admin-sub">Turnos del mes</p>
 
-        <Calendario
-          key={`${anio}-${mes}`}
-          turnos={turnos}
-          anio={anio}
-          mes={mes}
-          mesLabel={`${capitalizar(NOMBRES_MES[mes - 1])} ${anio}`}
-          hoyISO={hoyISO}
-          mesAnteriorHref={`/admin?mes=${anterior.anio}-${String(anterior.mes).padStart(2, "0")}`}
-          mesSiguienteHref={`/admin?mes=${siguiente.anio}-${String(siguiente.mes).padStart(2, "0")}`}
-        />
-      </div>
+      <Calendario
+        key={`${anio}-${mes}`}
+        turnos={turnos}
+        anio={anio}
+        mes={mes}
+        mesLabel={`${capitalizar(NOMBRES_MES[mes - 1])} ${anio}`}
+        hoyISO={hoyISO}
+        mesAnteriorHref={`/admin?mes=${anterior.anio}-${String(anterior.mes).padStart(2, "0")}`}
+        mesSiguienteHref={`/admin?mes=${siguiente.anio}-${String(siguiente.mes).padStart(2, "0")}`}
+      />
     </div>
   );
 }

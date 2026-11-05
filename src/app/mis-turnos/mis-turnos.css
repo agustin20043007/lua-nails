@@ -1,0 +1,126 @@
+.ln-mt {
+  min-height: 100%;
+  width: 100%;
+  background: var(--bg);
+  color: var(--texto);
+  font-family: var(--font-montserrat), system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.45;
+  padding: 24px 16px 60px;
+}
+.ln-mt * {
+  box-sizing: border-box;
+}
+
+.ln-mt-wrap {
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+.ln-mt-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+.ln-mt-marca {
+  font-family: var(--font-cormorant), serif;
+  font-weight: 600;
+  font-size: 18px;
+  color: var(--rosa-osc);
+}
+
+.ln-mt h1 {
+  font-family: var(--font-cormorant), serif;
+  font-weight: 600;
+  font-size: 28px;
+  color: var(--rosa-osc);
+  margin: 18px 0 4px;
+}
+.ln-mt-sub {
+  color: var(--suave);
+  font-size: 13px;
+  margin-bottom: 20px;
+}
+
+.ln-mt h2 {
+  font-family: var(--font-cormorant), serif;
+  font-size: 19px;
+  font-weight: 600;
+  color: var(--rosa-osc);
+  margin: 24px 0 10px;
+}
+.ln-mt h2:first-of-type {
+  margin-top: 0;
+}
+
+.ln-mt-turno {
+  display: flex;
+  gap: 14px;
+  background: var(--card);
+  border: 1px solid var(--borde);
+  border-radius: 16px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+}
+.ln-mt-turno-cancelado {
+  opacity: 0.6;
+}
+.ln-mt-turno-fecha {
+  flex: none;
+  width: 64px;
+  text-align: center;
+}
+.ln-mt-turno-fecha strong {
+  display: block;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--rosa-osc);
+  line-height: 1.1;
+}
+.ln-mt-turno-fecha span {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--suave);
+  letter-spacing: 0.04em;
+}
+.ln-mt-turno-info {
+  flex: 1;
+  min-width: 0;
+}
+.ln-mt-turno-info strong {
+  display: block;
+  font-size: 15px;
+}
+.ln-mt-turno-detalle {
+  font-size: 13px;
+  color: var(--suave);
+}
+.ln-mt-turno-nota {
+  font-size: 13px;
+  color: var(--texto);
+  margin-top: 4px;
+  font-style: italic;
+}
+.ln-mt-turno-precio {
+  flex: none;
+  font-weight: 600;
+  color: var(--rosa-osc);
+  white-space: nowrap;
+}
+.ln-mt-badge {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #b3261e;
+}
+
+.ln-mt-vacio {
+  color: var(--suave);
+  font-size: 14px;
+  padding: 10px 0 4px;
+}

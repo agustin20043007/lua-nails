@@ -1,0 +1,73 @@
+.ln-menu {
+  position: relative;
+  display: inline-block;
+}
+.ln-menu-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid var(--borde);
+  background: #fff;
+  font-size: 17px;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+.ln-menu-fondo {
+  position: fixed;
+  inset: 0;
+  background: transparent;
+  border: 0;
+  z-index: 10;
+  cursor: default;
+}
+.ln-menu-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 11;
+  min-width: 190px;
+  background: var(--card);
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  box-shadow: 0 10px 30px rgba(74, 44, 54, 0.12);
+}
+.ln-menu-nombre {
+  font-size: 12px;
+  color: var(--suave);
+  padding: 6px 10px 8px;
+  border-bottom: 1px solid var(--borde);
+  margin-bottom: 4px;
+}
+.ln-menu-panel a {
+  display: block;
+  padding: 8px 10px;
+  border-radius: 8px;
+  color: var(--texto);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+}
+.ln-menu-panel a:hover {
+  background: var(--bg);
+}
+.ln-menu-salir {
+  width: 100%;
+  text-align: left;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: none;
+  border: 0;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  color: #b3261e;
+  cursor: pointer;
+}
+.ln-menu-salir:hover {
+  background: var(--bg);
+}
