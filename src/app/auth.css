@@ -106,6 +106,22 @@
   cursor: not-allowed;
 }
 
+.ln-auth-btn-sec {
+  background: transparent;
+  color: var(--rosa-osc);
+  border: 1px solid var(--borde);
+}
+.ln-auth-btn-sec:hover {
+  background: var(--bg);
+}
+
+.ln-auth-nota {
+  text-align: center;
+  color: var(--suave);
+  font-size: 13px;
+  margin: 16px 0 20px;
+}
+
 .ln-auth-link {
   text-align: center;
   font-size: 13px;

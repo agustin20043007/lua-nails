@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useSyncExternalStore } from "react";
 import { Cormorant_Garamond, Montserrat } from "next/font/google";
+import Link from "next/link";
 import "./page.css";
 
 // El pipeline de Tailwind/Turbopack de este proyecto no genera el mapa de
@@ -47,6 +48,7 @@ const styles = {
   icono: "ln-icono",
   resumen: "ln-resumen",
   btn: "ln-btn",
+  cuenta: "ln-cuenta",
   btnWa: "ln-btn-wa",
   btnSec: "ln-btn-sec",
   barra: "ln-barra",
@@ -331,6 +333,9 @@ export default function Home() {
   return (
     <div className={`${styles.page} ${montserrat.variable} ${cormorant.variable}`}>
       <div className={styles.wrap}>
+        <div className={styles.cuenta}>
+          <Link href="/ingresar">Iniciar sesión / Crear cuenta</Link>
+        </div>
         <header>
           <div className={styles.luna}>☾</div>
           <h1>LUA NAILS</h1>
