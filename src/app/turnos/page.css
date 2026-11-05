@@ -33,6 +33,19 @@
 .ln-cuenta a:hover {
   text-decoration: underline;
 }
+.ln-cuenta-btn {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--rosa);
+  cursor: pointer;
+}
+.ln-cuenta-btn:hover {
+  text-decoration: underline;
+}
 
 .ln-page header {
   text-align: center;

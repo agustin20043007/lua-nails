@@ -37,7 +37,7 @@ export async function registrarse(_prevState: EstadoAuth, formData: FormData): P
   if (error) return { error: traducirError(error.message) };
 
   if (data.session) {
-    redirect("/mis-turnos");
+    redirect("/turnos");
   }
 
   return { mensaje: "Te mandamos un mail para confirmar la cuenta. Abrilo y después iniciá sesión." };
@@ -54,7 +54,7 @@ export async function iniciarSesion(_prevState: EstadoAuth, formData: FormData):
   if (error) return { error: traducirError(error.message) };
 
   const usuario = await getUsuarioActual();
-  redirect(usuario?.rol === "admin" ? "/admin" : "/mis-turnos");
+  redirect(usuario?.rol === "admin" ? "/admin" : "/turnos");
 }
 
 export async function cerrarSesion() {

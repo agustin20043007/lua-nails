@@ -5,7 +5,7 @@ import FormularioRegistrarse from "./formulario";
 export default async function RegistrarsePage() {
   const usuario = await getUsuarioActual();
   if (usuario) {
-    redirect(usuario.rol === "admin" ? "/admin" : "/mis-turnos");
+    redirect(usuario.rol === "admin" ? "/admin" : "/turnos");
   }
 
   return <FormularioRegistrarse />;
