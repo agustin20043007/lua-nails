@@ -6,7 +6,7 @@
 -- options.data. security definer hace que el trigger pueda escribir aunque
 -- todavía no haya sesión activa (ej. mientras espera confirmar el email).
 
-create function public.handle_new_user()
+create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
 security definer
@@ -18,10 +18,13 @@ begin
     new.id,
     coalesce(new.raw_user_meta_data ->> 'nombre', ''),
     new.raw_user_meta_data ->> 'telefono'
-  );
+  )
+  on conflict (id) do nothing;
   return new;
 end;
 $$;
+
+drop trigger if exists on_auth_user_created on auth.users;
 
 create trigger on_auth_user_created
   after insert on auth.users
