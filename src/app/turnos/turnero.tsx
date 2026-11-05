@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useState, useSyncExternalStore } from "react";
+import { useActionState, useMemo, useState, useSyncExternalStore } from "react";
 import { Cormorant_Garamond, Montserrat } from "next/font/google";
 import Link from "next/link";
 import { cerrarSesion } from "@/app/actions/auth";
+import { crearTurno, type EstadoTurno } from "@/app/actions/turnos";
 import "./page.css";
 
 // El pipeline de Tailwind/Turbopack de este proyecto no genera el mapa de
@@ -42,9 +43,7 @@ const styles = {
   vacio: "ln-vacio",
   hora: "ln-hora",
   campo: "ln-campo",
-  mal: "ln-mal",
   errorMsg: "ln-error-msg",
-  ayuda: "ln-ayuda",
   ok: "ln-ok",
   icono: "ln-icono",
   resumen: "ln-resumen",
@@ -69,95 +68,20 @@ const cormorant = Cormorant_Garamond({
   variable: "--font-cormorant",
 });
 
-/* ============ CONFIGURACIÓN (editá acá) ============ */
 const WHATSAPP = "5493413608338"; // 549 + característica + número, sin 0 ni 15
 const INTERVALO = 30; // cada cuántos minutos arranca un turno
 const DIAS_A_MOSTRAR = 21;
-// Horario por día de la semana (0=domingo ... 6=sábado). null = cerrado
-const HORARIOS: Record<number, [string, string] | null> = {
-  0: null,
-  1: ["09:00", "19:00"],
-  2: ["09:00", "19:00"],
-  3: ["09:00", "19:00"],
-  4: ["09:00", "19:00"],
-  5: ["09:00", "19:00"],
-  6: ["09:00", "14:00"],
-};
-// [nombre, precio, duración en minutos]
-type Item = [string, number, number];
-type Categoria = { cat: string; nota?: string; sinRetiro?: boolean; items: Item[] };
-const SERVICIOS: Categoria[] = [
-  {
-    cat: "Semipermanente",
-    items: [
-      ["Liso", 14500, 60],
-      ["Diseño en dos uñas", 15500, 75],
-      ["Full diseño / francesa", 16000, 90],
-      ["Full diseño + relieves", 17000, 105],
-    ],
-  },
-  {
-    cat: "Capping",
-    items: [
-      ["Transparente / neutral glitter (sin esmalte)", 15000, 75],
-      ["Liso", 18000, 90],
-      ["Diseño en dos uñas", 19000, 105],
-      ["Full diseño / francesa", 20000, 120],
-      ["Full diseño + relieves", 22000, 120],
-    ],
-  },
-  {
-    cat: "Soft gel",
-    nota: "Retoque: mismos valores que capping.",
-    items: [
-      ["Liso", 19000, 120],
-      ["Diseño en dos uñas", 20000, 120],
-      ["Full diseño / francesa", 21000, 135],
-      ["Full diseño + relieves", 23000, 150],
-    ],
-  },
-  {
-    cat: "Estética de manos",
-    nota: "Limado de uñas, retiro de cutícula y durezas e hidratación de la piel.",
-    sinRetiro: true,
-    items: [
-      ["Estética de manos", 9000, 45],
-      ["Estética de manos + retiro", 10000, 60],
-    ],
-  },
-  {
-    cat: "Pies",
-    items: [
-      ["Semipermanente liso", 16000, 60],
-      ["Semipermanente diseño", 17000, 75],
-      ["Tradicional", 13000, 60],
-    ],
-  },
-  {
-    cat: "Retiro",
-    sinRetiro: true,
-    items: [
-      ["Retiro de semipermanente", 5000, 30],
-      ["Retiro de capping / soft gel", 6000, 30],
-    ],
-  },
-];
-const RETIROS: Item[] = [
-  ["semipermanente", 5000, 30],
-  ["capping / soft gel", 6000, 30],
-];
-// Turnos ya ocupados (por ahora a mano; después vendrán de una base de datos)
-// formato: "AAAA-MM-DD HH:MM" con duración en minutos
-const OCUPADOS: [string, number][] = [
-  // ["2026-11-06 10:00", 90],
-];
-/* =================================================== */
+
+export type ServicioDB = { id: number; nombre: string; precio: number; duracionMin: number };
+export type CategoriaDB = { id: number; nombre: string; nota: string | null; sinRetiro: boolean; items: ServicioDB[] };
+export type RetiroDB = { id: number; nombre: string; precio: number; duracionMin: number };
+export type HorariosSemana = Record<number, [string, string] | null>;
+export type Ocupado = [string, number]; // "AAAA-MM-DD HH:MM", duración en minutos
 
 const PASOS = [
   { n: 1, label: "Servicio" },
   { n: 2, label: "Día y hora" },
-  { n: 3, label: "Tus datos" },
-  { n: 4, label: "Listo" },
+  { n: 3, label: "Listo" },
 ];
 
 const plata = (n: number) => "$" + n.toLocaleString("es-AR");
@@ -178,7 +102,18 @@ const sinSuscripcion = () => () => {};
 const esCliente = () => true;
 const esServidor = () => false;
 
-export default function Turnero({ nombre: nombreCuenta }: { nombre: string }) {
+type ServicioActual = { id: number; nombre: string; precio: number; dur: number; retiroId: number | null };
+
+type Props = {
+  nombre: string;
+  telefono: string;
+  categorias: CategoriaDB[];
+  retiros: RetiroDB[];
+  horarios: HorariosSemana;
+  ocupados: Ocupado[];
+};
+
+export default function Turnero({ nombre: nombreCuenta, telefono: telCuenta, categorias, retiros, horarios, ocupados }: Props) {
   const [paso, setPaso] = useState(1);
   const [catIdx, setCatIdx] = useState<number | null>(null);
   const [itemIdx, setItemIdx] = useState<number | null>(null);
@@ -186,33 +121,34 @@ export default function Turnero({ nombre: nombreCuenta }: { nombre: string }) {
   const [dia, setDia] = useState<string | null>(null);
   const [hora, setHora] = useState<number | null>(null);
   const [categoriasAbiertas, setCategoriasAbiertas] = useState<boolean[]>(() =>
-    SERVICIOS.map((_, i) => i === 0),
+    categorias.map((_, i) => i === 0),
   );
-  const [nombre, setNombre] = useState("");
-  const [tel, setTel] = useState("");
-  const [nota, setNota] = useState("");
-  const [showErrors, setShowErrors] = useState(false);
+  const [intento, setIntento] = useState(0);
   const mounted = useSyncExternalStore(sinSuscripcion, esCliente, esServidor);
 
-  const servicioActual = useMemo(() => {
+  const servicioActual = useMemo((): ServicioActual | null => {
     if (catIdx === null || itemIdx === null) return null;
-    const c = SERVICIOS[catIdx];
+    const c = categorias[catIdx];
     const it = c.items[itemIdx];
-    let nombreServ = c.cat === "Estética de manos" || c.cat === "Retiro" ? it[0] : `${c.cat} · ${it[0]}`;
-    let precio = it[1];
-    let dur = it[2];
+    let nombreServ = c.nombre === "Estética de manos" || c.nombre === "Retiro" ? it.nombre : `${c.nombre} · ${it.nombre}`;
+    let precio = it.precio;
+    let dur = it.duracionMin;
+    let retiroId: number | null = null;
     if (retiro !== "" && !c.sinRetiro) {
-      const r = RETIROS[Number(retiro)];
-      nombreServ += ` + retiro de ${r[0]}`;
-      precio += r[1];
-      dur += r[2];
+      const r = retiros.find((x) => String(x.id) === retiro);
+      if (r) {
+        nombreServ += ` + retiro de ${r.nombre}`;
+        precio += r.precio;
+        dur += r.duracionMin;
+        retiroId = r.id;
+      }
     }
-    return { nombre: nombreServ, precio, dur };
-  }, [catIdx, itemIdx, retiro]);
+    return { id: it.id, nombre: nombreServ, precio, dur, retiroId };
+  }, [catIdx, itemIdx, retiro, categorias, retiros]);
 
   function horasLibres(d: Date): { t: number; libre: boolean }[] {
     if (!servicioActual) return [];
-    const h = HORARIOS[d.getDay()];
+    const h = horarios[d.getDay()];
     if (!h) return [];
     const dur = servicioActual.dur;
     const ini = aMin(h[0]);
@@ -221,7 +157,7 @@ export default function Turnero({ nombre: nombreCuenta }: { nombre: string }) {
     const ahora = new Date();
     const esHoy = iso(ahora) === k;
     const minAhora = ahora.getHours() * 60 + ahora.getMinutes() + 60; // 1 h de anticipación
-    const ocup = OCUPADOS.filter((o) => o[0].startsWith(k)).map((o): [number, number] => {
+    const ocup = ocupados.filter((o) => o[0].startsWith(k)).map((o): [number, number] => {
       const s = aMin(o[0].slice(11));
       return [s, s + o[1]];
     });
@@ -233,12 +169,6 @@ export default function Turnero({ nombre: nombreCuenta }: { nombre: string }) {
     return out.some((x) => x.libre) ? out : [];
   }
 
-  function fechaLarga(): string {
-    if (!dia) return "";
-    const d = new Date(`${dia}T12:00`);
-    return capitalizar(d.toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" }));
-  }
-
   function irA(p: number) {
     if (p === 2 && dia && !horasLibres(new Date(`${dia}T12:00`)).length) {
       setDia(null);
@@ -248,12 +178,6 @@ export default function Turnero({ nombre: nombreCuenta }: { nombre: string }) {
   }
 
   function continuar() {
-    if (paso === 3) {
-      const nOk = nombre.trim().length >= 2;
-      const tOk = tel.replace(/\D/g, "").length >= 10;
-      setShowErrors(true);
-      if (!nOk || !tOk) return;
-    }
     irA(paso + 1);
   }
 
@@ -263,11 +187,8 @@ export default function Turnero({ nombre: nombreCuenta }: { nombre: string }) {
     setRetiro("");
     setDia(null);
     setHora(null);
-    setNombre("");
-    setTel("");
-    setNota("");
-    setShowErrors(false);
-    setCategoriasAbiertas(SERVICIOS.map((_, i) => i === 0));
+    setCategoriasAbiertas(categorias.map((_, i) => i === 0));
+    setIntento((n) => n + 1);
     irA(1);
   }
 
@@ -281,21 +202,20 @@ export default function Turnero({ nombre: nombreCuenta }: { nombre: string }) {
       const d = new Date(hoy);
       d.setDate(hoy.getDate() + i);
       const libres = horasLibres(d);
-      return { k: iso(d), d, abierto: !!HORARIOS[d.getDay()] && libres.length > 0 };
+      return { k: iso(d), d, abierto: !!horarios[d.getDay()] && libres.length > 0 };
     });
     const mesRef = dia ? new Date(`${dia}T12:00`) : hoy;
     mesLabel = capitalizar(mesRef.toLocaleDateString("es-AR", { month: "long", year: "numeric" }));
     horasList = dia ? horasLibres(new Date(`${dia}T12:00`)) : [];
   }
 
-  const nombreInvalido = showErrors && nombre.trim().length < 2;
-  const telInvalido = showErrors && tel.replace(/\D/g, "").length < 10;
-
   let barraDetalle = "";
   if (servicioActual) {
     barraDetalle = `${durTxt(servicioActual.dur)} · ${plata(servicioActual.precio)}`;
     if (paso >= 2 && dia) {
-      barraDetalle = fechaLarga() + (hora !== null ? ` · ${aHora(hora)} hs` : "");
+      const d = new Date(`${dia}T12:00`);
+      barraDetalle = capitalizar(d.toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" }));
+      barraDetalle += hora !== null ? ` · ${aHora(hora)} hs` : "";
     }
   }
   let continuarDisabled = !servicioActual;
@@ -303,34 +223,6 @@ export default function Turnero({ nombre: nombreCuenta }: { nombre: string }) {
     if (paso === 2) continuarDisabled = hora === null;
     else continuarDisabled = false;
   }
-
-  const resumenFilas: [string, string][] =
-    servicioActual && dia && hora !== null
-      ? [
-          ["Servicio", servicioActual.nombre],
-          ["Día", fechaLarga()],
-          ["Horario", `${aHora(hora)} hs (${durTxt(servicioActual.dur)} aprox.)`],
-          ["Nombre", nombre.trim()],
-          ["WhatsApp", tel.trim()],
-          ...(nota.trim() ? ([["Comentario", nota.trim()]] as [string, string][]) : []),
-          ["Total", plata(servicioActual.precio)],
-        ]
-      : [];
-
-  const linkWhatsApp = useMemo(() => {
-    if (!servicioActual || !dia || hora === null) return "";
-    const notaTrim = nota.trim();
-    const msg =
-      `¡Hola Lua Nails! 💅 Quiero sacar un turno:\n\n` +
-      `• Servicio: ${servicioActual.nombre}\n` +
-      `• Día: ${fechaLarga()}\n` +
-      `• Horario: ${aHora(hora)} hs\n` +
-      `• Total: ${plata(servicioActual.precio)}\n\n` +
-      `Nombre: ${nombre.trim()}\nWhatsApp: ${tel.trim()}` +
-      (notaTrim ? `\nComentario: ${notaTrim}` : "");
-    return "https://wa.me/" + WHATSAPP + "?text=" + encodeURIComponent(msg);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [servicioActual, dia, hora, nombre, tel, nota]);
 
   return (
     <div className={`${styles.page} ${montserrat.variable} ${cormorant.variable}`}>
@@ -364,8 +256,8 @@ export default function Turnero({ nombre: nombreCuenta }: { nombre: string }) {
           <section>
             <h2>¿Qué te querés hacer?</h2>
             <div>
-              {SERVICIOS.map((c, ci) => (
-                <div key={c.cat} className={`${styles.cat} ${categoriasAbiertas[ci] ? styles.abierta : ""}`}>
+              {categorias.map((c, ci) => (
+                <div key={c.id} className={`${styles.cat} ${categoriasAbiertas[ci] ? styles.abierta : ""}`}>
                   <button
                     type="button"
                     className={styles.catTit}
@@ -373,7 +265,7 @@ export default function Turnero({ nombre: nombreCuenta }: { nombre: string }) {
                       setCategoriasAbiertas((prev) => prev.map((v, i) => (i === ci ? !v : v)))
                     }
                   >
-                    {c.cat}
+                    {c.nombre}
                     <span className={styles.flecha}>⌄</span>
                   </button>
                   {categoriasAbiertas[ci] && (
@@ -381,7 +273,7 @@ export default function Turnero({ nombre: nombreCuenta }: { nombre: string }) {
                       {c.nota && <div className={styles.nota}>{c.nota}</div>}
                       {c.items.map((it, ii) => (
                         <button
-                          key={it[0]}
+                          key={it.id}
                           type="button"
                           className={`${styles.serv} ${catIdx === ci && itemIdx === ii ? styles.sel : ""}`}
                           onClick={() => {
@@ -392,10 +284,10 @@ export default function Turnero({ nombre: nombreCuenta }: { nombre: string }) {
                         >
                           <span className={styles.punto}></span>
                           <span className={styles.nom}>
-                            {it[0]}
-                            <span className={styles.durTexto}>{durTxt(it[2])} aprox.</span>
+                            {it.nombre}
+                            <span className={styles.durTexto}>{durTxt(it.duracionMin)} aprox.</span>
                           </span>
-                          <span className={styles.precio}>{plata(it[1])}</span>
+                          <span className={styles.precio}>{plata(it.precio)}</span>
                         </button>
                       ))}
                     </div>
@@ -403,7 +295,7 @@ export default function Turnero({ nombre: nombreCuenta }: { nombre: string }) {
                 </div>
               ))}
             </div>
-            {catIdx !== null && !SERVICIOS[catIdx].sinRetiro && (
+            {catIdx !== null && !categorias[catIdx].sinRetiro && (
               <div className={styles.extra}>
                 <label htmlFor="retiro">¿Venís con uñas puestas?</label>
                 <select
@@ -415,8 +307,11 @@ export default function Turnero({ nombre: nombreCuenta }: { nombre: string }) {
                   }}
                 >
                   <option value="">No, vengo sin nada</option>
-                  <option value="0">Sí, tengo semipermanente (+$5.000)</option>
-                  <option value="1">Sí, tengo capping / soft gel (+$6.000)</option>
+                  {retiros.map((r) => (
+                    <option key={r.id} value={String(r.id)}>
+                      Sí, tengo {r.nombre} (+{plata(r.precio)})
+                    </option>
+                  ))}
                 </select>
               </div>
             )}
@@ -467,80 +362,23 @@ export default function Turnero({ nombre: nombreCuenta }: { nombre: string }) {
           </section>
         )}
 
-        {paso === 3 && (
-          <section>
-            <button type="button" className={styles.volver} onClick={() => irA(2)}>
-              ← Cambiar día u horario
-            </button>
-            <h2>Tus datos</h2>
-            <div className={`${styles.campo} ${nombreInvalido ? styles.mal : ""}`}>
-              <label htmlFor="nombre">Nombre y apellido</label>
-              <input
-                id="nombre"
-                autoComplete="name"
-                placeholder="Ej: Sofía Gómez"
-                value={nombre}
-                onChange={(e) => setNombre(e.target.value)}
-              />
-              {nombreInvalido && <div className={styles.errorMsg}>Escribí tu nombre</div>}
-            </div>
-            <div className={`${styles.campo} ${telInvalido ? styles.mal : ""}`}>
-              <label htmlFor="tel">WhatsApp</label>
-              <input
-                id="tel"
-                type="tel"
-                inputMode="tel"
-                autoComplete="tel"
-                placeholder="Ej: 341 555 1234"
-                value={tel}
-                onChange={(e) => setTel(e.target.value)}
-              />
-              <div className={styles.ayuda}>Te escribimos por acá para confirmar el turno.</div>
-              {telInvalido && <div className={styles.errorMsg}>Revisá el número (código de área + número)</div>}
-            </div>
-            <div className={styles.campo}>
-              <label htmlFor="nota">Comentario (opcional)</label>
-              <textarea
-                id="nota"
-                rows={3}
-                placeholder="Ej: quiero diseño con flores, traigo foto de referencia"
-                value={nota}
-                onChange={(e) => setNota(e.target.value)}
-              />
-            </div>
-          </section>
-        )}
-
-        {paso === 4 && servicioActual && dia && hora !== null && (
-          <section>
-            <div className={styles.ok}>
-              <div className={styles.icono}>♡</div>
-              <h2>¡Ya casi está!</h2>
-              <p>Mandanos el pedido por WhatsApp y te confirmamos el turno.</p>
-            </div>
-            <div className={styles.resumen}>
-              {resumenFilas.map(([k, v]) => (
-                <div key={k}>
-                  <span>{k}</span>
-                  <span>{v}</span>
-                </div>
-              ))}
-            </div>
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center" }}>
-              <a className={`${styles.btn} ${styles.btnWa}`} href={linkWhatsApp} target="_blank" rel="noopener noreferrer">
-                Enviar por WhatsApp
-              </a>
-              <button type="button" className={`${styles.btn} ${styles.btnSec}`} onClick={reiniciar}>
-                Sacar otro turno
-              </button>
-            </div>
-          </section>
+        {paso === 3 && servicioActual && dia && hora !== null && (
+          <ConfirmarTurno
+            key={intento}
+            servicioActual={servicioActual}
+            dia={dia}
+            hora={hora}
+            nombreCuenta={nombreCuenta}
+            telCuenta={telCuenta}
+            onVolver={() => irA(2)}
+            onReservarOtro={reiniciar}
+          />
         )}
 
         <footer>☾ Lua Nails · Turnos por WhatsApp 341 360-8338</footer>
       </div>
 
-      {paso !== 4 && (
+      {paso !== 3 && (
         <div className={styles.barra}>
           <div className={`${styles.wrap} ${styles.barraWrap}`}>
             <div className={styles.barraInfoText}>
@@ -554,11 +392,131 @@ export default function Turnero({ nombre: nombreCuenta }: { nombre: string }) {
               )}
             </div>
             <button type="button" className={styles.btn} disabled={continuarDisabled} onClick={continuar}>
-              {paso === 3 ? "Ver resumen" : "Continuar"}
+              {paso === 2 ? "Ver resumen" : "Continuar"}
             </button>
           </div>
         </div>
       )}
     </div>
+  );
+}
+
+function ConfirmarTurno({
+  servicioActual,
+  dia,
+  hora,
+  nombreCuenta,
+  telCuenta,
+  onVolver,
+  onReservarOtro,
+}: {
+  servicioActual: ServicioActual;
+  dia: string;
+  hora: number;
+  nombreCuenta: string;
+  telCuenta: string;
+  onVolver: () => void;
+  onReservarOtro: () => void;
+}) {
+  const [nota, setNota] = useState("");
+  const [estado, confirmar, guardando] = useActionState<EstadoTurno, FormData>(crearTurno, undefined);
+
+  const fechaLarga = capitalizar(
+    new Date(`${dia}T12:00`).toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" }),
+  );
+
+  const resumenFilas: [string, string][] = [
+    ["Servicio", servicioActual.nombre],
+    ["Día", fechaLarga],
+    ["Horario", `${aHora(hora)} hs (${durTxt(servicioActual.dur)} aprox.)`],
+    ["Nombre", nombreCuenta],
+    ["WhatsApp", telCuenta],
+    ...(nota.trim() ? ([["Comentario", nota.trim()]] as [string, string][]) : []),
+    ["Total", plata(servicioActual.precio)],
+  ];
+
+  if (estado?.ok) {
+    const notaTrim = nota.trim();
+    const msg =
+      `¡Hola Lua Nails! 💅 Acabo de reservar un turno:\n\n` +
+      `• Servicio: ${servicioActual.nombre}\n` +
+      `• Día: ${fechaLarga}\n` +
+      `• Horario: ${aHora(hora)} hs\n` +
+      `• Total: ${plata(servicioActual.precio)}\n\n` +
+      `Nombre: ${nombreCuenta}\nWhatsApp: ${telCuenta}` +
+      (notaTrim ? `\nComentario: ${notaTrim}` : "");
+    const linkWhatsApp = "https://wa.me/" + WHATSAPP + "?text=" + encodeURIComponent(msg);
+
+    return (
+      <section>
+        <div className={styles.ok}>
+          <div className={styles.icono}>♡</div>
+          <h2>¡Turno reservado!</h2>
+          <p>Te esperamos. Si querés, avisanos por WhatsApp.</p>
+        </div>
+        <div className={styles.resumen}>
+          {resumenFilas.map(([k, v]) => (
+            <div key={k}>
+              <span>{k}</span>
+              <span>{v}</span>
+            </div>
+          ))}
+        </div>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center" }}>
+          <a className={`${styles.btn} ${styles.btnWa}`} href={linkWhatsApp} target="_blank" rel="noopener noreferrer">
+            Avisar por WhatsApp
+          </a>
+          <button type="button" className={`${styles.btn} ${styles.btnSec}`} onClick={onReservarOtro}>
+            Sacar otro turno
+          </button>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section>
+      <button type="button" className={styles.volver} onClick={onVolver}>
+        ← Cambiar día u horario
+      </button>
+      <div className={styles.ok}>
+        <div className={styles.icono}>♡</div>
+        <h2>¡Ya casi está!</h2>
+        <p>Revisá los datos y confirmá tu turno.</p>
+      </div>
+      <form action={confirmar}>
+        <input type="hidden" name="servicioId" value={servicioActual.id} />
+        <input type="hidden" name="retiroId" value={servicioActual.retiroId ?? ""} />
+        <input type="hidden" name="fecha" value={dia} />
+        <input type="hidden" name="horaInicio" value={hora} />
+        <input type="hidden" name="duracionMin" value={servicioActual.dur} />
+        <input type="hidden" name="precioTotal" value={servicioActual.precio} />
+        <div className={styles.campo}>
+          <label htmlFor="nota">Comentario (opcional)</label>
+          <textarea
+            id="nota"
+            name="nota"
+            rows={3}
+            placeholder="Ej: quiero diseño con flores, traigo foto de referencia"
+            value={nota}
+            onChange={(e) => setNota(e.target.value)}
+          />
+        </div>
+        <div className={styles.resumen}>
+          {resumenFilas.map(([k, v]) => (
+            <div key={k}>
+              <span>{k}</span>
+              <span>{v}</span>
+            </div>
+          ))}
+        </div>
+        {estado?.error && <p className={styles.errorMsg}>{estado.error}</p>}
+        <div style={{ display: "flex", justifyContent: "center" }}>
+          <button type="submit" className={styles.btn} disabled={guardando}>
+            {guardando ? "Confirmando…" : "Confirmar turno"}
+          </button>
+        </div>
+      </form>
+    </section>
   );
 }
