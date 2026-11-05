@@ -1,0 +1,181 @@
+.ln-admin {
+  min-height: 100%;
+  width: 100%;
+  background: var(--bg);
+  color: var(--texto);
+  font-family: var(--font-montserrat), system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.45;
+  padding: 24px 16px 60px;
+}
+.ln-admin * {
+  box-sizing: border-box;
+}
+
+.ln-admin-wrap {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.ln-admin-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+.ln-admin h1 {
+  font-family: var(--font-cormorant), serif;
+  font-weight: 600;
+  font-size: 30px;
+  color: var(--rosa-osc);
+  margin: 0;
+}
+.ln-admin-cuenta {
+  font-size: 12px;
+  color: var(--suave);
+}
+.ln-admin-cuenta button {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--rosa);
+  cursor: pointer;
+}
+.ln-admin-cuenta button:hover {
+  text-decoration: underline;
+}
+
+.ln-admin-sub {
+  color: var(--suave);
+  font-size: 13px;
+  margin-bottom: 20px;
+}
+
+.ln-admin-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.ln-admin-tab {
+  border: 1px solid var(--borde);
+  background: #fff;
+  color: var(--rosa-osc);
+  font: inherit;
+  font-weight: 600;
+  font-size: 13px;
+  padding: 9px 18px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.ln-admin-tab.ln-admin-tab-activo {
+  background: var(--rosa);
+  border-color: var(--rosa);
+  color: #fff;
+}
+
+.ln-admin-dia {
+  font-family: var(--font-cormorant), serif;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--rosa-osc);
+  margin: 22px 0 10px;
+}
+.ln-admin-dia:first-child {
+  margin-top: 0;
+}
+
+.ln-admin-turno {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  background: var(--card);
+  border: 1px solid var(--borde);
+  border-radius: 16px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+}
+.ln-admin-turno-cancelado {
+  opacity: 0.55;
+}
+.ln-admin-turno-hora {
+  flex: none;
+  width: 56px;
+  font-weight: 600;
+  color: var(--rosa-osc);
+}
+.ln-admin-turno-info {
+  flex: 1;
+  min-width: 0;
+}
+.ln-admin-turno-info strong {
+  display: block;
+  font-size: 15px;
+}
+.ln-admin-turno-detalle {
+  font-size: 13px;
+  color: var(--suave);
+}
+.ln-admin-turno-nota {
+  font-size: 13px;
+  color: var(--texto);
+  margin-top: 4px;
+  font-style: italic;
+}
+.ln-admin-turno-precio {
+  flex: none;
+  font-weight: 600;
+  color: var(--rosa-osc);
+  white-space: nowrap;
+}
+.ln-admin-turno-acciones {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+.ln-admin-badge {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--suave);
+}
+.ln-admin-btn-cancelar {
+  border: 1px solid var(--borde);
+  background: #fff;
+  color: #b3261e;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.ln-admin-btn-cancelar:hover {
+  background: #fdeceb;
+}
+.ln-admin-btn-cancelar:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ln-admin-vacio {
+  color: var(--suave);
+  font-size: 14px;
+  padding: 20px 0;
+  text-align: center;
+}
+
+.ln-admin-error {
+  color: #b3261e;
+  font-size: 12px;
+  margin-top: 4px;
+  text-align: right;
+}
