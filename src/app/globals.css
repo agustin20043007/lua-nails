@@ -3,6 +3,16 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
+  /* Paleta de marca de Lua Nails, compartida por todas las páginas */
+  --bg: #fbf3f4;
+  --card: #ffffff;
+  --rosa: #c2577a;
+  --rosa-osc: #9e3d5e;
+  --rosa-claro: #f6dfe6;
+  --borde: #ecc9d4;
+  --texto: #4a2c36;
+  --suave: #8c6b76;
 }
 
 @theme inline {

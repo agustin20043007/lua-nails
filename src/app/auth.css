@@ -1,0 +1,122 @@
+.ln-auth {
+  min-height: 100%;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  color: var(--texto);
+  font-family: var(--font-montserrat), system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.45;
+  padding: 32px 16px;
+}
+.ln-auth * {
+  box-sizing: border-box;
+}
+
+.ln-auth-card {
+  width: 100%;
+  max-width: 380px;
+  background: var(--card);
+  border: 1px solid var(--borde);
+  border-radius: 18px;
+  padding: 28px 24px;
+}
+
+.ln-auth-luna {
+  text-align: center;
+  color: var(--rosa);
+  font-size: 22px;
+  margin-bottom: 4px;
+}
+
+.ln-auth h1 {
+  font-family: var(--font-cormorant), serif;
+  font-weight: 600;
+  font-size: 28px;
+  text-align: center;
+  color: var(--rosa-osc);
+  margin: 0 0 4px;
+}
+
+.ln-auth-sub {
+  text-align: center;
+  color: var(--suave);
+  font-size: 13px;
+  margin-bottom: 20px;
+}
+
+.ln-auth-campo {
+  margin-bottom: 14px;
+}
+.ln-auth-campo label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+.ln-auth input {
+  width: 100%;
+  font: inherit;
+  color: inherit;
+  padding: 11px 12px;
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  background: #fff;
+  margin: 0;
+}
+.ln-auth input:focus {
+  outline: 2px solid var(--rosa-claro);
+  border-color: var(--rosa);
+}
+.ln-auth-campo.ln-auth-mal input {
+  border-color: #b3261e;
+}
+
+.ln-auth-error {
+  color: #b3261e;
+  font-size: 13px;
+  margin: 0 0 14px;
+  text-align: center;
+}
+.ln-auth-ok {
+  color: #1e7a3e;
+  font-size: 13px;
+  margin: 0 0 14px;
+  text-align: center;
+}
+
+.ln-auth-btn {
+  width: 100%;
+  border: 0;
+  border-radius: 999px;
+  padding: 13px 22px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--rosa);
+  color: #fff;
+  margin-top: 4px;
+}
+.ln-auth-btn:hover {
+  background: var(--rosa-osc);
+}
+.ln-auth-btn:disabled {
+  background: #dfbfca;
+  cursor: not-allowed;
+}
+
+.ln-auth-link {
+  text-align: center;
+  font-size: 13px;
+  color: var(--suave);
+  margin-top: 18px;
+}
+.ln-auth-link a {
+  color: var(--rosa);
+  font-weight: 600;
+  text-decoration: none;
+}
+.ln-auth-link a:hover {
+  text-decoration: underline;
+}
