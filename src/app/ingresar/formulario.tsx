@@ -5,7 +5,7 @@ import Link from "next/link";
 import "../auth.css";
 import { iniciarSesion, type EstadoAuth } from "@/app/actions/auth";
 
-export default function FormularioIngresar() {
+export default function FormularioIngresar({ errorLink }: { errorLink?: boolean }) {
   const [estado, accion, pendiente] = useActionState<EstadoAuth, FormData>(iniciarSesion, undefined);
 
   return (
@@ -15,6 +15,9 @@ export default function FormularioIngresar() {
         <h1>Iniciar sesión</h1>
         <p className="ln-auth-sub">Lua Nails · Estética &amp; uñas</p>
 
+        {errorLink && (
+          <p className="ln-auth-error">Ese link venció o ya se usó. Pedí uno nuevo para restablecer la contraseña.</p>
+        )}
         {estado?.error && <p className="ln-auth-error">{estado.error}</p>}
 
         <form action={accion}>
@@ -31,6 +34,9 @@ export default function FormularioIngresar() {
           </button>
         </form>
 
+        <p className="ln-auth-link">
+          <Link href="/recuperar">¿Olvidaste tu contraseña?</Link>
+        </p>
         <p className="ln-auth-link">
           ¿No tenés cuenta? <Link href="/registrarse">Registrate</Link>
         </p>

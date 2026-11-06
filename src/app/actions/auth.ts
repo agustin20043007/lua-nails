@@ -1,10 +1,18 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { getUsuarioActual } from "@/lib/auth";
 
 export type EstadoAuth = { error?: string; mensaje?: string } | undefined;
+
+async function obtenerOrigen() {
+  const h = await headers();
+  const host = h.get("host") ?? "localhost:3000";
+  const proto = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
+  return `${proto}://${host}`;
+}
 
 function traducirError(mensaje: string): string {
   if (mensaje.includes("already registered")) return "Ese email ya está registrado. Probá iniciar sesión.";
@@ -58,6 +66,25 @@ export async function iniciarSesion(_prevState: EstadoAuth, formData: FormData):
 
   const usuario = await getUsuarioActual();
   redirect(usuario?.rol === "admin" ? "/admin" : "/turnos");
+}
+
+export async function solicitarRecuperacion(_prevState: EstadoAuth, formData: FormData): Promise<EstadoAuth> {
+  const email = String(formData.get("email") ?? "").trim();
+  if (!email.includes("@")) return { error: "Revisá el email." };
+
+  const supabase = await createClient();
+  const origen = await obtenerOrigen();
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${origen}/auth/confirm?next=/restablecer`,
+  });
+
+  if (error) {
+    console.error("Error en solicitarRecuperacion (resetPasswordForEmail):", error.message, error.status);
+  }
+
+  // Siempre el mismo mensaje, exista o no ese email: así no se puede usar
+  // este formulario para averiguar qué emails están registrados.
+  return { mensaje: "Si ese email está registrado, te mandamos un link para restablecer la contraseña. Revisá tu casilla (y la de spam)." };
 }
 
 export async function cerrarSesion() {
