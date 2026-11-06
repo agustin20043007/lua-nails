@@ -15,8 +15,8 @@ export async function crearTurno(_prevState: EstadoTurno, formData: FormData): P
   if (!usuario) return { error: "Tu sesión venció. Volvé a iniciar sesión." };
 
   const servicioId = Number(formData.get("servicioId"));
-  const retiroIdRaw = String(formData.get("retiroId") ?? "");
-  const retiroId = retiroIdRaw ? Number(retiroIdRaw) : null;
+  const vieneRaw = String(formData.get("vieneConUnasPuestas") ?? "");
+  const vieneConUnasPuestas = vieneRaw === "" ? null : vieneRaw === "true";
   const fecha = String(formData.get("fecha") ?? "");
   const horaInicioMin = Number(formData.get("horaInicio"));
   const duracionMin = Number(formData.get("duracionMin"));
@@ -45,7 +45,7 @@ export async function crearTurno(_prevState: EstadoTurno, formData: FormData): P
   const { error } = await supabase.from("turnos").insert({
     cliente_id: usuario.id,
     servicio_id: servicioId,
-    retiro_id: retiroId,
+    viene_con_unas_puestas: vieneConUnasPuestas,
     fecha,
     hora_inicio: horaInicioStr,
     duracion_min: duracionMin,

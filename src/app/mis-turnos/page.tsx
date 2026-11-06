@@ -49,8 +49,8 @@ export default async function MisTurnosPage() {
   const turnos: Turno[] = ((data ?? []) as unknown as FilaTurnoDB[]).map((t) => {
     const catNombre = t.servicio?.categoria?.nombre ?? "";
     const servNombre = t.servicio?.nombre ?? "Servicio";
-    let servicioNombre =
-      catNombre && catNombre !== "Estética de manos" && catNombre !== "Retiro" ? `${catNombre} · ${servNombre}` : servNombre;
+    const sinPrefijo = ["Estética de manos", "Retiro", "Pestañas y cejas"];
+    let servicioNombre = catNombre && !sinPrefijo.includes(catNombre) ? `${catNombre} · ${servNombre}` : servNombre;
     if (t.retiro) servicioNombre += ` + retiro de ${t.retiro.nombre}`;
 
     return {

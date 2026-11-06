@@ -322,6 +322,27 @@
   text-decoration: line-through;
   cursor: not-allowed;
 }
+
+.ln-sino {
+  display: flex;
+  gap: 8px;
+}
+.ln-opcion {
+  flex: 1;
+  padding: 10px 0;
+  border-radius: 12px;
+  border: 1px solid var(--borde);
+  background: #fff;
+  font: inherit;
+  font-weight: 500;
+  color: inherit;
+  cursor: pointer;
+}
+.ln-opcion.ln-sel {
+  background: var(--rosa);
+  border-color: var(--rosa);
+  color: #fff;
+}
 .ln-vacio {
   color: var(--suave);
   font-size: 14px;

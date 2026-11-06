@@ -59,6 +59,8 @@ const styles = {
   barra: "ln-barra",
   barraWrap: "ln-barra-wrap",
   barraInfoText: "ln-barra-info",
+  sino: "ln-sino",
+  opcion: "ln-opcion",
 } as const;
 
 const montserrat = Montserrat({
@@ -77,7 +79,6 @@ const INTERVALO = 30; // cada cuántos minutos arranca un turno
 
 export type ServicioDB = { id: number; nombre: string; precio: number; duracionMin: number };
 export type CategoriaDB = { id: number; nombre: string; nota: string | null; sinRetiro: boolean; items: ServicioDB[] };
-export type RetiroDB = { id: number; nombre: string; precio: number; duracionMin: number };
 export type HorariosSemana = Record<number, [string, string] | null>;
 export type Ocupado = [string, number]; // "AAAA-MM-DD HH:MM", duración en minutos
 
@@ -103,22 +104,21 @@ const sinSuscripcion = () => () => {};
 const esCliente = () => true;
 const esServidor = () => false;
 
-type ServicioActual = { id: number; nombre: string; precio: number; dur: number; retiroId: number | null };
+type ServicioActual = { id: number; nombre: string; precio: number; dur: number };
 
 type Props = {
   nombre: string;
   telefono: string;
   categorias: CategoriaDB[];
-  retiros: RetiroDB[];
   horarios: HorariosSemana;
   ocupados: Ocupado[];
 };
 
-export default function Turnero({ nombre: nombreCuenta, telefono: telCuenta, categorias, retiros, horarios, ocupados }: Props) {
+export default function Turnero({ nombre: nombreCuenta, telefono: telCuenta, categorias, horarios, ocupados }: Props) {
   const [paso, setPaso] = useState(1);
   const [catIdx, setCatIdx] = useState<number | null>(null);
   const [itemIdx, setItemIdx] = useState<number | null>(null);
-  const [retiro, setRetiro] = useState("");
+  const [vieneConUnas, setVieneConUnas] = useState<boolean | null>(null);
   const [dia, setDia] = useState<string | null>(null);
   const [hora, setHora] = useState<number | null>(null);
   const [categoriasAbiertas, setCategoriasAbiertas] = useState<boolean[]>(() =>
@@ -132,21 +132,12 @@ export default function Turnero({ nombre: nombreCuenta, telefono: telCuenta, cat
     if (catIdx === null || itemIdx === null) return null;
     const c = categorias[catIdx];
     const it = c.items[itemIdx];
-    let nombreServ = c.nombre === "Estética de manos" || c.nombre === "Retiro" ? it.nombre : `${c.nombre} · ${it.nombre}`;
-    let precio = it.precio;
-    let dur = it.duracionMin;
-    let retiroId: number | null = null;
-    if (retiro !== "" && !c.sinRetiro) {
-      const r = retiros.find((x) => String(x.id) === retiro);
-      if (r) {
-        nombreServ += ` + retiro de ${r.nombre}`;
-        precio += r.precio;
-        dur += r.duracionMin;
-        retiroId = r.id;
-      }
-    }
-    return { id: it.id, nombre: nombreServ, precio, dur, retiroId };
-  }, [catIdx, itemIdx, retiro, categorias, retiros]);
+    const nombreServ =
+      c.nombre === "Estética de manos" || c.nombre === "Retiro" || c.nombre === "Pestañas y cejas"
+        ? it.nombre
+        : `${c.nombre} · ${it.nombre}`;
+    return { id: it.id, nombre: nombreServ, precio: it.precio, dur: it.duracionMin };
+  }, [catIdx, itemIdx, categorias]);
 
   function horasLibres(d: Date): { t: number; libre: boolean }[] {
     if (!servicioActual) return [];
@@ -186,7 +177,7 @@ export default function Turnero({ nombre: nombreCuenta, telefono: telCuenta, cat
   function reiniciar() {
     setCatIdx(null);
     setItemIdx(null);
-    setRetiro("");
+    setVieneConUnas(null);
     setDia(null);
     setHora(null);
     setCategoriasAbiertas(categorias.map((_, i) => i === 0));
@@ -231,8 +222,14 @@ export default function Turnero({ nombre: nombreCuenta, telefono: telCuenta, cat
   }
   let continuarDisabled = !servicioActual;
   if (servicioActual) {
-    if (paso === 2) continuarDisabled = hora === null;
-    else continuarDisabled = false;
+    if (paso === 1) {
+      const requiereInfoUnas = catIdx !== null && !categorias[catIdx].sinRetiro;
+      continuarDisabled = requiereInfoUnas && vieneConUnas === null;
+    } else if (paso === 2) {
+      continuarDisabled = hora === null;
+    } else {
+      continuarDisabled = false;
+    }
   }
 
   return (
@@ -287,6 +284,7 @@ export default function Turnero({ nombre: nombreCuenta, telefono: telCuenta, cat
                           onClick={() => {
                             setCatIdx(ci);
                             setItemIdx(ii);
+                            setVieneConUnas(null);
                             setHora(null);
                           }}
                         >
@@ -305,22 +303,23 @@ export default function Turnero({ nombre: nombreCuenta, telefono: telCuenta, cat
             </div>
             {catIdx !== null && !categorias[catIdx].sinRetiro && (
               <div className={styles.extra}>
-                <label htmlFor="retiro">¿Venís con uñas puestas?</label>
-                <select
-                  id="retiro"
-                  value={retiro}
-                  onChange={(e) => {
-                    setRetiro(e.target.value);
-                    setHora(null);
-                  }}
-                >
-                  <option value="">No, vengo sin nada</option>
-                  {retiros.map((r) => (
-                    <option key={r.id} value={String(r.id)}>
-                      Sí, tengo {r.nombre} (+{plata(r.precio)})
-                    </option>
-                  ))}
-                </select>
+                <label>¿Venís con las uñas puestas?</label>
+                <div className={styles.sino}>
+                  <button
+                    type="button"
+                    className={`${styles.opcion} ${vieneConUnas === false ? styles.sel : ""}`}
+                    onClick={() => setVieneConUnas(false)}
+                  >
+                    No
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.opcion} ${vieneConUnas === true ? styles.sel : ""}`}
+                    onClick={() => setVieneConUnas(true)}
+                  >
+                    Sí
+                  </button>
+                </div>
               </div>
             )}
           </section>
@@ -404,6 +403,7 @@ export default function Turnero({ nombre: nombreCuenta, telefono: telCuenta, cat
             servicioActual={servicioActual}
             dia={dia}
             hora={hora}
+            vieneConUnas={vieneConUnas}
             nombreCuenta={nombreCuenta}
             telCuenta={telCuenta}
             onVolver={() => irA(2)}
@@ -441,6 +441,7 @@ function ConfirmarTurno({
   servicioActual,
   dia,
   hora,
+  vieneConUnas,
   nombreCuenta,
   telCuenta,
   onVolver,
@@ -449,12 +450,14 @@ function ConfirmarTurno({
   servicioActual: ServicioActual;
   dia: string;
   hora: number;
+  vieneConUnas: boolean | null;
   nombreCuenta: string;
   telCuenta: string;
   onVolver: () => void;
   onReservarOtro: () => void;
 }) {
   const [nota, setNota] = useState("");
+  const [avisado, setAvisado] = useState(false);
   const [estado, confirmar, guardando] = useActionState<EstadoTurno, FormData>(crearTurno, undefined);
 
   const fechaLarga = capitalizar(
@@ -463,6 +466,7 @@ function ConfirmarTurno({
 
   const resumenFilas: [string, string][] = [
     ["Servicio", servicioActual.nombre],
+    ...(vieneConUnas !== null ? ([["¿Venís con las uñas puestas?", vieneConUnas ? "Sí" : "No"]] as [string, string][]) : []),
     ["Día", fechaLarga],
     ["Horario", `${aHora(hora)} hs (${durTxt(servicioActual.dur)} aprox.)`],
     ["Nombre", nombreCuenta],
@@ -476,6 +480,7 @@ function ConfirmarTurno({
     const msg =
       `¡Hola Lua Nails! 💅 Acabo de reservar un turno:\n\n` +
       `• Servicio: ${servicioActual.nombre}\n` +
+      (vieneConUnas !== null ? `• ¿Venís con las uñas puestas?: ${vieneConUnas ? "Sí" : "No"}\n` : "") +
       `• Día: ${fechaLarga}\n` +
       `• Horario: ${aHora(hora)} hs\n` +
       `• Total: ${plata(servicioActual.precio)}\n\n` +
@@ -488,7 +493,7 @@ function ConfirmarTurno({
         <div className={styles.ok}>
           <div className={styles.icono}>♡</div>
           <h2>¡Turno reservado!</h2>
-          <p>Te esperamos. Si querés, avisanos por WhatsApp.</p>
+          <p>{avisado ? "Te esperamos." : "Para terminar, avisanos por WhatsApp."}</p>
         </div>
         <div className={styles.resumen}>
           {resumenFilas.map(([k, v]) => (
@@ -499,12 +504,20 @@ function ConfirmarTurno({
           ))}
         </div>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center" }}>
-          <a className={`${styles.btn} ${styles.btnWa}`} href={linkWhatsApp} target="_blank" rel="noopener noreferrer">
+          <a
+            className={`${styles.btn} ${styles.btnWa}`}
+            href={linkWhatsApp}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => setAvisado(true)}
+          >
             Avisar por WhatsApp
           </a>
-          <button type="button" className={`${styles.btn} ${styles.btnSec}`} onClick={onReservarOtro}>
-            Sacar otro turno
-          </button>
+          {avisado && (
+            <button type="button" className={`${styles.btn} ${styles.btnSec}`} onClick={onReservarOtro}>
+              Sacar otro turno
+            </button>
+          )}
         </div>
       </section>
     );
@@ -522,7 +535,7 @@ function ConfirmarTurno({
       </div>
       <form action={confirmar}>
         <input type="hidden" name="servicioId" value={servicioActual.id} />
-        <input type="hidden" name="retiroId" value={servicioActual.retiroId ?? ""} />
+        <input type="hidden" name="vieneConUnasPuestas" value={vieneConUnas === null ? "" : String(vieneConUnas)} />
         <input type="hidden" name="fecha" value={dia} />
         <input type="hidden" name="horaInicio" value={hora} />
         <input type="hidden" name="duracionMin" value={servicioActual.dur} />

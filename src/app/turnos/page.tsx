@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { getUsuarioActual } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { iso, sumarMeses, ultimoDiaDelMes } from "@/lib/calendario";
-import Turnero, { type CategoriaDB, type HorariosSemana, type Ocupado, type RetiroDB } from "./turnero";
+import Turnero, { type CategoriaDB, type HorariosSemana, type Ocupado } from "./turnero";
 
 export default async function TurnosPage() {
   const usuario = await getUsuarioActual();
@@ -16,10 +16,9 @@ export default async function TurnosPage() {
   const siguiente = sumarMeses(hoy.getFullYear(), hoy.getMonth() + 1, 1);
   const hastaISO = ultimoDiaDelMes(siguiente.anio, siguiente.mes);
 
-  const [categoriasRes, serviciosRes, retirosRes, horariosRes, ocupadosRes] = await Promise.all([
+  const [categoriasRes, serviciosRes, horariosRes, ocupadosRes] = await Promise.all([
     supabase.from("categorias_servicio").select("id, nombre, nota, sin_retiro").order("orden"),
     supabase.from("servicios").select("id, categoria_id, nombre, precio, duracion_min").order("orden"),
-    supabase.from("retiros").select("id, nombre, precio, duracion_min"),
     supabase.from("horarios").select("dia_semana, hora_inicio, hora_fin"),
     supabase.rpc("horarios_ocupados", { desde: iso(hoy), hasta: hastaISO }),
   ]);
@@ -33,13 +32,6 @@ export default async function TurnosPage() {
     items: servicios
       .filter((s) => s.categoria_id === c.id)
       .map((s) => ({ id: s.id, nombre: s.nombre, precio: s.precio, duracionMin: s.duracion_min })),
-  }));
-
-  const retiros: RetiroDB[] = (retirosRes.data ?? []).map((r) => ({
-    id: r.id,
-    nombre: r.nombre,
-    precio: r.precio,
-    duracionMin: r.duracion_min,
   }));
 
   const horarios: HorariosSemana = {};
@@ -59,7 +51,6 @@ export default async function TurnosPage() {
       nombre={usuario.nombre}
       telefono={usuario.telefono ?? ""}
       categorias={categorias}
-      retiros={retiros}
       horarios={horarios}
       ocupados={ocupados}
     />
