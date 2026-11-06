@@ -42,7 +42,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   const siguiente = sumarMeses(anio, mes, 1);
 
   const supabase = await createClient();
-  const [{ data }, categoriasRes, serviciosRes] = await Promise.all([
+  const [{ data }, categoriasRes, serviciosRes, diasCerradosRes] = await Promise.all([
     supabase
       .from("turnos")
       .select(
@@ -54,6 +54,11 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
       .order("hora_inicio", { ascending: true }),
     supabase.from("categorias_servicio").select("id, nombre").order("orden"),
     supabase.from("servicios").select("id, categoria_id, nombre, precio, duracion_min").order("orden"),
+    supabase
+      .from("dias_cerrados")
+      .select("fecha")
+      .gte("fecha", primerDiaDelMes(anio, mes))
+      .lte("fecha", ultimoDiaDelMes(anio, mes)),
   ]);
 
   const filas = (data ?? []) as unknown as FilaTurnoDB[];
@@ -90,6 +95,8 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
     };
   });
 
+  const diasCerrados = (diasCerradosRes.data ?? []).map((d) => d.fecha);
+
   return (
     <div>
       <h1>Agenda</h1>
@@ -99,6 +106,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
         key={`${anio}-${mes}`}
         turnos={turnos}
         categorias={categorias}
+        diasCerrados={diasCerrados}
         anio={anio}
         mes={mes}
         mesLabel={`${capitalizar(NOMBRES_MES[mes - 1])} ${anio}`}

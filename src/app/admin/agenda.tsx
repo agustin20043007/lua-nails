@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useFormStatus } from "react-dom";
 import {
   actualizarTurnoAdmin,
+  alternarDiaCerrado,
   cancelarTurno,
   crearTurnoAdmin,
   type EstadoTurnoAdmin,
@@ -37,6 +38,7 @@ const capitalizar = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 type Props = {
   turnos: TurnoAgenda[];
   categorias: CategoriaCatalogo[];
+  diasCerrados: string[];
   anio: number;
   mes: number; // 1-12
   mesLabel: string;
@@ -48,6 +50,7 @@ type Props = {
 export default function Calendario({
   turnos,
   categorias,
+  diasCerrados,
   anio,
   mes,
   mesLabel,
@@ -56,6 +59,7 @@ export default function Calendario({
   mesSiguienteHref,
 }: Props) {
   const semanas = grillaMes(anio, mes);
+  const cerrados = new Set(diasCerrados);
 
   const diaConTurnos = (fecha: string) => turnos.some((t) => t.fecha === fecha);
   const hoyEstaEnEsteMes = estaEnMes(hoyISO, anio, mes);
@@ -91,7 +95,7 @@ export default function Calendario({
             <button
               key={fecha}
               type="button"
-              className={`ln-admin-cal-dia ${fecha === hoyISO ? "ln-admin-cal-hoy" : ""} ${diaSeleccionado === fecha ? "ln-admin-cal-sel" : ""}`}
+              className={`ln-admin-cal-dia ${fecha === hoyISO ? "ln-admin-cal-hoy" : ""} ${diaSeleccionado === fecha ? "ln-admin-cal-sel" : ""} ${cerrados.has(fecha) ? "ln-admin-cal-cerrado" : ""}`}
               onClick={() => {
                 setDiaSeleccionado(fecha);
                 setFormularioAbierto(null);
@@ -119,12 +123,20 @@ export default function Calendario({
                       month: "long",
                     }),
                   )}
+              {cerrados.has(diaSeleccionado) && <span className="ln-admin-badge-cerrado">Cerrado</span>}
             </h2>
-            {formularioAbierto === null && (
-              <button type="button" className="ln-admin-btn-nuevo" onClick={() => setFormularioAbierto("nuevo")}>
-                + Nuevo turno
-              </button>
-            )}
+            <div className="ln-admin-dia-header-acciones">
+              <ToggleDiaCerrado
+                fecha={diaSeleccionado}
+                cerrado={cerrados.has(diaSeleccionado)}
+                cantidadTurnos={turnosDelDia.filter((t) => t.estado === "confirmado").length}
+              />
+              {formularioAbierto === null && (
+                <button type="button" className="ln-admin-btn-nuevo" onClick={() => setFormularioAbierto("nuevo")}>
+                  + Nuevo turno
+                </button>
+              )}
+            </div>
           </div>
 
           {formularioAbierto === "nuevo" && (
@@ -170,6 +182,45 @@ export default function Calendario({
 function estaEnMes(fecha: string, anio: number, mes: number) {
   const [a, m] = fecha.split("-").map(Number);
   return a === anio && m === mes;
+}
+
+function ToggleDiaCerrado({
+  fecha,
+  cerrado,
+  cantidadTurnos,
+}: {
+  fecha: string;
+  cerrado: boolean;
+  cantidadTurnos: number;
+}) {
+  const [estado, accionar] = useActionState(alternarDiaCerrado, undefined);
+
+  return (
+    <form
+      action={accionar}
+      onSubmit={(e) => {
+        if (cerrado) return;
+        const avisoTurnos = cantidadTurnos > 0 ? ` Ya hay ${cantidadTurnos} turno(s) ese día, van a quedar igual.` : "";
+        if (!confirm(`¿Cerrar este día? No se van a poder reservar turnos nuevos por la web.${avisoTurnos}`)) {
+          e.preventDefault();
+        }
+      }}
+    >
+      <input type="hidden" name="fecha" value={fecha} />
+      <input type="hidden" name="cerradoActual" value={String(cerrado)} />
+      <BotonToggleDia cerrado={cerrado} />
+      {estado?.error && <div className="ln-admin-error">{estado.error}</div>}
+    </form>
+  );
+}
+
+function BotonToggleDia({ cerrado }: { cerrado: boolean }) {
+  const { pending } = useFormStatus();
+  return (
+    <button type="submit" className={cerrado ? "ln-admin-btn-reabrir" : "ln-admin-btn-cerrar"} disabled={pending}>
+      {pending ? "Guardando…" : cerrado ? "Reabrir día" : "Cerrar día"}
+    </button>
+  );
 }
 
 function FilaTurno({

@@ -22,6 +22,33 @@ export async function cancelarTurno(_prevState: EstadoCancelar, formData: FormDa
   return undefined;
 }
 
+export type EstadoDiaCerrado = { error?: string } | undefined;
+
+export async function alternarDiaCerrado(
+  _prevState: EstadoDiaCerrado,
+  formData: FormData,
+): Promise<EstadoDiaCerrado> {
+  const usuario = await getUsuarioActual();
+  if (!usuario || usuario.rol !== "admin") return { error: "No tenés permiso para hacer esto." };
+
+  const fecha = String(formData.get("fecha") ?? "");
+  const cerradoActual = formData.get("cerradoActual") === "true";
+  if (!fecha) return { error: "Falta la fecha." };
+
+  const supabase = await createClient();
+  const { error } = cerradoActual
+    ? await supabase.from("dias_cerrados").delete().eq("fecha", fecha)
+    : await supabase.from("dias_cerrados").insert({ fecha });
+
+  if (error) {
+    return { error: cerradoActual ? "No se pudo reabrir el día. Probá de nuevo." : "No se pudo cerrar el día. Probá de nuevo." };
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/turnos");
+  return undefined;
+}
+
 export type EstadoTurnoAdmin = { error?: string; ok?: boolean } | undefined;
 
 const aMin = (hhmm: string) => {
