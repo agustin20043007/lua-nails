@@ -31,6 +31,9 @@ export default function MenuAdmin({ nombre }: { nombre: string }) {
             <Link href="/admin" onClick={() => setAbierto(false)}>
               Agenda
             </Link>
+            <Link href="/admin/ganancias" onClick={() => setAbierto(false)}>
+              Ganancias
+            </Link>
             <Link href="/admin/configuracion" onClick={() => setAbierto(false)}>
               Configuración
             </Link>

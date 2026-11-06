@@ -619,3 +619,34 @@
 .ln-admin-modal-acciones button {
   flex: 1;
 }
+
+.ln-admin-ganancia-card {
+  background: var(--card);
+  border: 1px solid var(--borde);
+  border-radius: 16px;
+  padding: 18px 16px;
+  margin-bottom: 16px;
+}
+.ln-admin-ganancia-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--suave);
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.ln-admin-ganancia-monto {
+  font-family: var(--font-cormorant), serif;
+  font-size: 34px;
+  font-weight: 600;
+  color: var(--rosa-osc);
+  line-height: 1.1;
+}
+.ln-admin-ganancia-detalle {
+  font-size: 13px;
+  color: var(--suave);
+  margin-top: 2px;
+}
+.ln-admin-ganancia-card .ln-admin-cal-header {
+  margin-bottom: 10px;
+}
