@@ -230,13 +230,13 @@ export default function Turnero({
       barraDetalle += hora !== null ? ` · ${aHora(hora)} hs` : "";
     }
   }
+  const requiereInfoUnas = catIdx !== null && !categorias[catIdx].sinRetiro;
   let continuarDisabled = !servicioActual;
   if (servicioActual) {
     if (paso === 1) {
-      const requiereInfoUnas = catIdx !== null && !categorias[catIdx].sinRetiro;
-      continuarDisabled = requiereInfoUnas && vieneConUnas === null;
+      continuarDisabled = false;
     } else if (paso === 2) {
-      continuarDisabled = hora === null;
+      continuarDisabled = hora === null || (requiereInfoUnas && vieneConUnas === null);
     } else {
       continuarDisabled = false;
     }
@@ -311,6 +311,14 @@ export default function Turnero({
                 </div>
               ))}
             </div>
+          </section>
+        )}
+
+        {paso === 2 && (
+          <section>
+            <button type="button" className={styles.volver} onClick={() => irA(1)}>
+              ← Cambiar servicio
+            </button>
             {catIdx !== null && !categorias[catIdx].sinRetiro && (
               <div className={styles.extra}>
                 <label>¿Venís con las uñas puestas?</label>
@@ -332,14 +340,6 @@ export default function Turnero({
                 </div>
               </div>
             )}
-          </section>
-        )}
-
-        {paso === 2 && (
-          <section>
-            <button type="button" className={styles.volver} onClick={() => irA(1)}>
-              ← Cambiar servicio
-            </button>
             <h2>Elegí el día</h2>
             <div className={styles.calHeader}>
               <button
