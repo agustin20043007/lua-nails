@@ -34,7 +34,10 @@ export async function registrarse(_prevState: EstadoAuth, formData: FormData): P
     options: { data: { nombre, telefono } },
   });
 
-  if (error) return { error: traducirError(error.message) };
+  if (error) {
+    console.error("Error en registrarse (signUp):", error.message, error.status, error.code);
+    return { error: traducirError(error.message) };
+  }
 
   if (data.session) {
     redirect("/turnos");
