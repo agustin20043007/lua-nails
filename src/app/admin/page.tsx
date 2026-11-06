@@ -16,6 +16,7 @@ type FilaTurnoDB = {
   estado: "confirmado" | "cancelado";
   servicio: { nombre: string; categoria: { nombre: string } | null } | null;
   retiro: { nombre: string } | null;
+  viene_con_unas_puestas: boolean | null;
 };
 
 const aMin = (hhmm: string) => {
@@ -43,7 +44,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   const { data } = await supabase
     .from("turnos")
     .select(
-      "id, fecha, hora_inicio, duracion_min, precio_total, nombre, telefono, nota, estado, servicio:servicios(nombre, categoria:categorias_servicio(nombre)), retiro:retiros(nombre)",
+      "id, fecha, hora_inicio, duracion_min, precio_total, nombre, telefono, nota, estado, viene_con_unas_puestas, servicio:servicios(nombre, categoria:categorias_servicio(nombre)), retiro:retiros(nombre)",
     )
     .gte("fecha", primerDiaDelMes(anio, mes))
     .lte("fecha", ultimoDiaDelMes(anio, mes))
@@ -55,9 +56,10 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   const turnos: TurnoAgenda[] = filas.map((t) => {
     const catNombre = t.servicio?.categoria?.nombre ?? "";
     const servNombre = t.servicio?.nombre ?? "Servicio";
-    let servicioNombre =
-      catNombre && catNombre !== "Estética de manos" && catNombre !== "Retiro" ? `${catNombre} · ${servNombre}` : servNombre;
+    const sinPrefijo = ["Estética de manos", "Retiro", "Pestañas y cejas"];
+    let servicioNombre = catNombre && !sinPrefijo.includes(catNombre) ? `${catNombre} · ${servNombre}` : servNombre;
     if (t.retiro) servicioNombre += ` + retiro de ${t.retiro.nombre}`;
+    if (t.viene_con_unas_puestas) servicioNombre += " · viene con las uñas puestas";
 
     return {
       id: t.id,

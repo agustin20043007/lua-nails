@@ -104,6 +104,7 @@ create table public.turnos (
   nombre text not null,
   telefono text not null,
   nota text,
+  viene_con_unas_puestas boolean,
   estado text not null default 'confirmado' check (estado in ('confirmado', 'cancelado')),
   created_at timestamptz not null default now()
 );
