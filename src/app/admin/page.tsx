@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NOMBRES_MES, iso, primerDiaDelMes, sumarMeses, ultimoDiaDelMes } from "@/lib/calendario";
-import Calendario, { type TurnoAgenda } from "./agenda";
+import Calendario, { type CategoriaCatalogo, type TurnoAgenda } from "./agenda";
 
 const capitalizar = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
@@ -14,6 +14,7 @@ type FilaTurnoDB = {
   telefono: string;
   nota: string | null;
   estado: "confirmado" | "cancelado";
+  servicio_id: number;
   servicio: { nombre: string; categoria: { nombre: string } | null } | null;
   retiro: { nombre: string } | null;
   viene_con_unas_puestas: boolean | null;
@@ -41,17 +42,30 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   const siguiente = sumarMeses(anio, mes, 1);
 
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("turnos")
-    .select(
-      "id, fecha, hora_inicio, duracion_min, precio_total, nombre, telefono, nota, estado, viene_con_unas_puestas, servicio:servicios(nombre, categoria:categorias_servicio(nombre)), retiro:retiros(nombre)",
-    )
-    .gte("fecha", primerDiaDelMes(anio, mes))
-    .lte("fecha", ultimoDiaDelMes(anio, mes))
-    .order("fecha", { ascending: true })
-    .order("hora_inicio", { ascending: true });
+  const [{ data }, categoriasRes, serviciosRes] = await Promise.all([
+    supabase
+      .from("turnos")
+      .select(
+        "id, fecha, hora_inicio, duracion_min, precio_total, nombre, telefono, nota, estado, servicio_id, viene_con_unas_puestas, servicio:servicios(nombre, categoria:categorias_servicio(nombre)), retiro:retiros(nombre)",
+      )
+      .gte("fecha", primerDiaDelMes(anio, mes))
+      .lte("fecha", ultimoDiaDelMes(anio, mes))
+      .order("fecha", { ascending: true })
+      .order("hora_inicio", { ascending: true }),
+    supabase.from("categorias_servicio").select("id, nombre").order("orden"),
+    supabase.from("servicios").select("id, categoria_id, nombre, precio, duracion_min").order("orden"),
+  ]);
 
   const filas = (data ?? []) as unknown as FilaTurnoDB[];
+
+  const servicios = serviciosRes.data ?? [];
+  const categorias: CategoriaCatalogo[] = (categoriasRes.data ?? []).map((c) => ({
+    id: c.id,
+    nombre: c.nombre,
+    servicios: servicios
+      .filter((s) => s.categoria_id === c.id)
+      .map((s) => ({ id: s.id, nombre: s.nombre, precio: s.precio, duracionMin: s.duracion_min })),
+  }));
 
   const turnos: TurnoAgenda[] = filas.map((t) => {
     const catNombre = t.servicio?.categoria?.nombre ?? "";
@@ -72,6 +86,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
       nota: t.nota,
       estado: t.estado,
       servicioNombre,
+      servicioId: t.servicio_id,
     };
   });
 
@@ -83,6 +98,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
       <Calendario
         key={`${anio}-${mes}`}
         turnos={turnos}
+        categorias={categorias}
         anio={anio}
         mes={mes}
         mesLabel={`${capitalizar(NOMBRES_MES[mes - 1])} ${anio}`}
