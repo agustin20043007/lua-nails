@@ -112,9 +112,18 @@ type Props = {
   categorias: CategoriaDB[];
   horarios: HorariosSemana;
   ocupados: Ocupado[];
+  diasCerrados: string[];
 };
 
-export default function Turnero({ nombre: nombreCuenta, telefono: telCuenta, categorias, horarios, ocupados }: Props) {
+export default function Turnero({
+  nombre: nombreCuenta,
+  telefono: telCuenta,
+  categorias,
+  horarios,
+  ocupados,
+  diasCerrados,
+}: Props) {
+  const diasCerradosSet = useMemo(() => new Set(diasCerrados), [diasCerrados]);
   const [paso, setPaso] = useState(1);
   const [catIdx, setCatIdx] = useState<number | null>(null);
   const [itemIdx, setItemIdx] = useState<number | null>(null);
@@ -141,6 +150,7 @@ export default function Turnero({ nombre: nombreCuenta, telefono: telCuenta, cat
 
   function horasLibres(d: Date): { t: number; libre: boolean }[] {
     if (!servicioActual) return [];
+    if (diasCerradosSet.has(iso(d))) return [];
     const h = horarios[d.getDay()];
     if (!h) return [];
     const dur = servicioActual.dur;

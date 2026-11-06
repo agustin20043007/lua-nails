@@ -196,13 +196,173 @@
 .ln-admin-cal-dia.ln-admin-cal-sel .ln-admin-cal-punto {
   background: #fff;
 }
+.ln-admin-cal-dia.ln-admin-cal-cerrado {
+  background: #f1eceb;
+  border-color: #e3d6d4;
+  color: var(--suave);
+  text-decoration: line-through;
+}
+.ln-admin-cal-dia.ln-admin-cal-cerrado.ln-admin-cal-sel {
+  background: #b3261e;
+  border-color: #b3261e;
+  color: #fff;
+}
+
+.ln-admin-dia-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
 
 .ln-admin-dia-titulo {
   font-family: var(--font-cormorant), serif;
   font-size: 20px;
   font-weight: 600;
   color: var(--rosa-osc);
-  margin: 0 0 10px;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ln-admin-dia-header-acciones {
+  flex: none;
+  display: flex;
+  gap: 8px;
+}
+
+.ln-admin-badge-cerrado {
+  font-family: var(--font-montserrat), system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #b3261e;
+  background: #fdeceb;
+  border-radius: 999px;
+  padding: 3px 9px;
+}
+
+.ln-admin-btn-cerrar,
+.ln-admin-btn-reabrir {
+  flex: none;
+  border: 1px solid var(--borde);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 7px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.ln-admin-btn-cerrar {
+  background: #fff;
+  color: #b3261e;
+}
+.ln-admin-btn-cerrar:hover {
+  background: #fdeceb;
+}
+.ln-admin-btn-reabrir {
+  background: #fff;
+  color: var(--rosa-osc);
+}
+.ln-admin-btn-reabrir:hover {
+  background: var(--bg);
+}
+.ln-admin-btn-cerrar:disabled,
+.ln-admin-btn-reabrir:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ln-admin-btn-nuevo {
+  flex: none;
+  border: 0;
+  border-radius: 999px;
+  padding: 7px 14px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--rosa);
+  color: #fff;
+  white-space: nowrap;
+}
+.ln-admin-btn-nuevo:hover {
+  background: var(--rosa-osc);
+}
+
+.ln-admin-btn-editar {
+  border: 1px solid var(--borde);
+  background: #fff;
+  color: var(--rosa-osc);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.ln-admin-btn-editar:hover {
+  background: var(--bg);
+}
+.ln-admin-btn-editar:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ln-admin-form-turno {
+  background: var(--card);
+  border: 1px solid var(--borde);
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ln-admin-campo-fila {
+  display: flex;
+  gap: 12px;
+}
+.ln-admin-campo-fila .ln-admin-campo {
+  flex: 1;
+  min-width: 0;
+}
+.ln-admin-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ln-admin-campo label {
+  font-size: 12px;
+  color: var(--suave);
+  font-weight: 500;
+}
+.ln-admin-campo input,
+.ln-admin-campo select,
+.ln-admin-campo textarea {
+  font: inherit;
+  font-size: 14px;
+  padding: 8px 10px;
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  background: #fff;
+  color: inherit;
+  width: 100%;
+}
+.ln-admin-campo textarea {
+  resize: vertical;
+}
+.ln-admin-form-acciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 4px;
 }
 
 .ln-admin-turno {
