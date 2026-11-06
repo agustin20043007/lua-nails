@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useFormStatus } from "react-dom";
 import {
@@ -184,6 +184,44 @@ function estaEnMes(fecha: string, anio: number, mes: number) {
   return a === anio && m === mes;
 }
 
+function ModalConfirmar({
+  titulo,
+  mensaje,
+  textoConfirmar,
+  peligro,
+  onConfirmar,
+  onCancelar,
+}: {
+  titulo: string;
+  mensaje: string;
+  textoConfirmar: string;
+  peligro?: boolean;
+  onConfirmar: () => void;
+  onCancelar: () => void;
+}) {
+  return (
+    <div className="ln-admin-modal-fondo" onClick={onCancelar}>
+      <div className="ln-admin-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="ln-admin-modal-marca">☾ Lua Nails</div>
+        <h3 className="ln-admin-modal-titulo">{titulo}</h3>
+        <p className="ln-admin-modal-mensaje">{mensaje}</p>
+        <div className="ln-admin-modal-acciones">
+          <button type="button" className="ln-admin-btn-editar" onClick={onCancelar}>
+            Volver
+          </button>
+          <button
+            type="button"
+            className={peligro ? "ln-admin-btn-cerrar" : "ln-admin-btn-guardar"}
+            onClick={onConfirmar}
+          >
+            {textoConfirmar}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ToggleDiaCerrado({
   fecha,
   cerrado,
@@ -194,30 +232,46 @@ function ToggleDiaCerrado({
   cantidadTurnos: number;
 }) {
   const [estado, accionar] = useActionState(alternarDiaCerrado, undefined);
+  const [confirmando, setConfirmando] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  const avisoTurnos =
+    cantidadTurnos > 0 ? ` Ya hay ${cantidadTurnos} turno(s) ese día: van a quedar como están.` : "";
 
   return (
-    <form
-      action={accionar}
-      onSubmit={(e) => {
-        if (cerrado) return;
-        const avisoTurnos = cantidadTurnos > 0 ? ` Ya hay ${cantidadTurnos} turno(s) ese día, van a quedar igual.` : "";
-        if (!confirm(`¿Cerrar este día? No se van a poder reservar turnos nuevos por la web.${avisoTurnos}`)) {
-          e.preventDefault();
-        }
-      }}
-    >
-      <input type="hidden" name="fecha" value={fecha} />
-      <input type="hidden" name="cerradoActual" value={String(cerrado)} />
-      <BotonToggleDia cerrado={cerrado} />
-      {estado?.error && <div className="ln-admin-error">{estado.error}</div>}
-    </form>
+    <>
+      <form ref={formRef} action={accionar}>
+        <input type="hidden" name="fecha" value={fecha} />
+        <input type="hidden" name="cerradoActual" value={String(cerrado)} />
+        <BotonToggleDia cerrado={cerrado} onClick={() => (cerrado ? formRef.current?.requestSubmit() : setConfirmando(true))} />
+        {estado?.error && <div className="ln-admin-error">{estado.error}</div>}
+      </form>
+      {confirmando && (
+        <ModalConfirmar
+          titulo="¿Cerrar este día?"
+          mensaje={`No se van a poder reservar turnos nuevos por la web ese día.${avisoTurnos}`}
+          textoConfirmar="Sí, cerrar día"
+          peligro
+          onConfirmar={() => {
+            setConfirmando(false);
+            formRef.current?.requestSubmit();
+          }}
+          onCancelar={() => setConfirmando(false)}
+        />
+      )}
+    </>
   );
 }
 
-function BotonToggleDia({ cerrado }: { cerrado: boolean }) {
+function BotonToggleDia({ cerrado, onClick }: { cerrado: boolean; onClick: () => void }) {
   const { pending } = useFormStatus();
   return (
-    <button type="submit" className={cerrado ? "ln-admin-btn-reabrir" : "ln-admin-btn-cerrar"} disabled={pending}>
+    <button
+      type="button"
+      className={cerrado ? "ln-admin-btn-reabrir" : "ln-admin-btn-cerrar"}
+      disabled={pending}
+      onClick={onClick}
+    >
       {pending ? "Guardando…" : cerrado ? "Reabrir día" : "Cerrar día"}
     </button>
   );
@@ -233,6 +287,8 @@ function FilaTurno({
   onEditar: () => void;
 }) {
   const [estado, cancelar] = useActionState(cancelarTurno, undefined);
+  const [confirmando, setConfirmando] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
   const cancelado = turno.estado === "cancelado";
 
   return (
@@ -254,29 +310,35 @@ function FilaTurno({
             <button type="button" className="ln-admin-btn-editar" disabled={deshabilitado} onClick={onEditar}>
               Editar
             </button>
-            <form
-              action={cancelar}
-              onSubmit={(e) => {
-                if (!confirm(`¿Cancelar el turno de ${turno.nombreCliente} a las ${aHora(turno.horaInicio)}?`)) {
-                  e.preventDefault();
-                }
-              }}
-            >
+            <form ref={formRef} action={cancelar}>
               <input type="hidden" name="turnoId" value={turno.id} />
-              <BotonCancelar deshabilitado={deshabilitado} />
+              <BotonCancelar deshabilitado={deshabilitado} onClick={() => setConfirmando(true)} />
             </form>
           </>
         )}
         {estado?.error && <div className="ln-admin-error">{estado.error}</div>}
       </div>
+      {confirmando && (
+        <ModalConfirmar
+          titulo="¿Cancelar turno?"
+          mensaje={`${turno.nombreCliente} · ${aHora(turno.horaInicio)} hs · ${turno.servicioNombre}`}
+          textoConfirmar="Sí, cancelar"
+          peligro
+          onConfirmar={() => {
+            setConfirmando(false);
+            formRef.current?.requestSubmit();
+          }}
+          onCancelar={() => setConfirmando(false)}
+        />
+      )}
     </div>
   );
 }
 
-function BotonCancelar({ deshabilitado }: { deshabilitado: boolean }) {
+function BotonCancelar({ deshabilitado, onClick }: { deshabilitado: boolean; onClick: () => void }) {
   const { pending } = useFormStatus();
   return (
-    <button type="submit" className="ln-admin-btn-cancelar" disabled={pending || deshabilitado}>
+    <button type="button" className="ln-admin-btn-cancelar" disabled={pending || deshabilitado} onClick={onClick}>
       {pending ? "Cancelando…" : "Cancelar"}
     </button>
   );
