@@ -1,10 +1,11 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-
-  /* Paleta de marca de Lua Nails, compartida por todas las páginas */
+  /* Paleta de marca de Lua Nails, compartida por todas las páginas. Es un
+     diseño único (no hay variante oscura), así que el fondo del body tiene
+     que ser siempre este rosa claro: si quedara en blanco/negro por defecto,
+     cualquier borde sin cubrir (rebote de scroll en el celu, notch, etc.) se
+     ve mal con el teléfono en modo oscuro. */
   --bg: #fbf3f4;
   --card: #ffffff;
   --rosa: #c2577a;
@@ -16,21 +17,12 @@
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--bg);
+  color: var(--texto);
   font-family: Arial, Helvetica, sans-serif;
 }
