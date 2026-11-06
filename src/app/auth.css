@@ -102,6 +102,21 @@
   text-align: center;
 }
 
+.ln-auth-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--suave);
+  margin: -4px 0 16px;
+  cursor: pointer;
+}
+.ln-auth-checkbox input {
+  width: auto;
+  margin: 0;
+  accent-color: var(--rosa);
+}
+
 .ln-auth-btn {
   width: 100%;
   border: 0;
