@@ -442,6 +442,36 @@
   cursor: not-allowed;
 }
 
+.ln-admin-btn-recordatorio {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #25a35a;
+  color: #fff;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 7px 14px;
+  border-radius: 999px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.ln-admin-btn-recordatorio:hover {
+  background: #1f8a4c;
+}
+.ln-admin-btn-recordatorio-hecho {
+  background: var(--borde);
+  color: var(--suave);
+}
+.ln-admin-btn-recordatorio-hecho:hover {
+  background: var(--borde);
+}
+.ln-admin-badge-aviso {
+  font-size: 12px;
+  color: #b3261e;
+  white-space: nowrap;
+}
+
 .ln-admin-vacio {
   color: var(--suave);
   font-size: 14px;
