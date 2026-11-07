@@ -19,7 +19,7 @@ export default async function TurnosPage() {
   const [categoriasRes, serviciosRes, horariosRes, ocupadosRes, diasCerradosRes] = await Promise.all([
     supabase.from("categorias_servicio").select("id, nombre, nota, sin_retiro").order("orden"),
     supabase.from("servicios").select("id, categoria_id, nombre, precio, duracion_min").order("orden"),
-    supabase.from("horarios").select("dia_semana, hora_inicio, hora_fin"),
+    supabase.from("horarios").select("dia_semana, hora_inicio, hora_fin").order("dia_semana").order("tramo"),
     supabase.rpc("horarios_ocupados", { desde: iso(hoy), hasta: hastaISO }),
     supabase.from("dias_cerrados").select("fecha").gte("fecha", iso(hoy)).lte("fecha", hastaISO),
   ]);
@@ -37,7 +37,8 @@ export default async function TurnosPage() {
 
   const horarios: HorariosSemana = {};
   for (const h of horariosRes.data ?? []) {
-    horarios[h.dia_semana] = h.hora_inicio && h.hora_fin ? [h.hora_inicio.slice(0, 5), h.hora_fin.slice(0, 5)] : null;
+    const arr = horarios[h.dia_semana] ?? (horarios[h.dia_semana] = []);
+    arr.push([h.hora_inicio.slice(0, 5), h.hora_fin.slice(0, 5)]);
   }
 
   const ocupados: Ocupado[] = (ocupadosRes.data ?? []).map(

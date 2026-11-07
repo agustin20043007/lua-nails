@@ -9,7 +9,8 @@ const MINUTOS = ["00", "15", "30", "45"];
 
 export type ServicioConfig = { id: number; nombre: string; precio: number; duracionMin: number };
 export type CategoriaConfig = { id: number; nombre: string; servicios: ServicioConfig[] };
-export type HorarioDia = { dia: number; abierto: boolean; inicio: string; fin: string };
+export type Tramo = { inicio: string; fin: string };
+export type HorarioDia = { dia: number; abierto: boolean; tramos: Tramo[] };
 
 export default function EditorConfiguracion({
   categorias,
@@ -34,9 +35,32 @@ function SeccionHorarios({ horariosIniciales }: { horariosIniciales: HorarioDia[
     setDias((prev) => prev.map((d) => (d.dia === dia ? { ...d, ...cambios } : d)));
   }
 
+  function actualizarTramo(dia: number, idx: number, cambios: Partial<Tramo>) {
+    setDias((prev) =>
+      prev.map((d) =>
+        d.dia === dia ? { ...d, tramos: d.tramos.map((t, i) => (i === idx ? { ...t, ...cambios } : t)) } : d,
+      ),
+    );
+  }
+
+  function agregarTramo(dia: number) {
+    setDias((prev) =>
+      prev.map((d) => (d.dia === dia ? { ...d, tramos: [...d.tramos, { inicio: "16:00", fin: "20:00" }] } : d)),
+    );
+  }
+
+  function quitarTramo(dia: number, idx: number) {
+    setDias((prev) =>
+      prev.map((d) => (d.dia === dia ? { ...d, tramos: d.tramos.filter((_, i) => i !== idx) } : d)),
+    );
+  }
+
   return (
     <section className="ln-admin-config-sec">
       <h3>Horarios de atención</h3>
+      <p className="ln-admin-sub">
+        Para un día con corte (ej: mañana y tarde), agregá más de una franja horaria.
+      </p>
       <form action={guardar}>
         {dias.map((d) => (
           <div key={d.dia} className="ln-admin-horario-fila">
@@ -50,18 +74,35 @@ function SeccionHorarios({ horariosIniciales }: { horariosIniciales: HorarioDia[
               {NOMBRES_DIA[d.dia]}
             </label>
             {d.abierto ? (
-              <div className="ln-admin-horario-horas">
-                <SelectorHora
-                  nombreCampo={`inicio_${d.dia}`}
-                  valor={d.inicio}
-                  onCambiar={(v) => actualizar(d.dia, { inicio: v })}
-                />
-                <span>a</span>
-                <SelectorHora
-                  nombreCampo={`fin_${d.dia}`}
-                  valor={d.fin}
-                  onCambiar={(v) => actualizar(d.dia, { fin: v })}
-                />
+              <div className="ln-admin-horario-tramos">
+                {d.tramos.map((t, i) => (
+                  <div key={i} className="ln-admin-horario-horas">
+                    <SelectorHora
+                      nombreCampo={`inicio_${d.dia}_${i}`}
+                      valor={t.inicio}
+                      onCambiar={(v) => actualizarTramo(d.dia, i, { inicio: v })}
+                    />
+                    <span>a</span>
+                    <SelectorHora
+                      nombreCampo={`fin_${d.dia}_${i}`}
+                      valor={t.fin}
+                      onCambiar={(v) => actualizarTramo(d.dia, i, { fin: v })}
+                    />
+                    {d.tramos.length > 1 && (
+                      <button
+                        type="button"
+                        className="ln-admin-tramo-quitar"
+                        onClick={() => quitarTramo(d.dia, i)}
+                        aria-label="Quitar franja"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                ))}
+                <button type="button" className="ln-admin-tramo-agregar" onClick={() => agregarTramo(d.dia)}>
+                  + Agregar franja horaria
+                </button>
               </div>
             ) : (
               <span className="ln-admin-horario-cerrado">Cerrado</span>
