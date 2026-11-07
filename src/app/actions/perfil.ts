@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getUsuarioActual } from "@/lib/auth";
+import { normalizarWhatsApp } from "@/lib/telefono";
 
 export type EstadoPerfil = { error?: string; ok?: boolean } | undefined;
 
@@ -14,7 +15,9 @@ export async function actualizarDatos(_prevState: EstadoPerfil, formData: FormDa
   const telefono = String(formData.get("telefono") ?? "").trim();
 
   if (nombre.length < 2) return { error: "Escribí tu nombre y apellido." };
-  if (telefono.replace(/\D/g, "").length < 10) return { error: "Revisá el número de WhatsApp (código de área + número)." };
+  if (!normalizarWhatsApp(telefono)) {
+    return { error: "Revisá el número de WhatsApp: código de área + número, sin el 0 ni el 15 (ej: 341 555 1234)." };
+  }
 
   const supabase = await createClient();
   const { error } = await supabase.from("profiles").update({ nombre, telefono }).eq("id", usuario.id);
