@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { getUsuarioActual } from "@/lib/auth";
+import { normalizarWhatsApp } from "@/lib/telefono";
 
 export type EstadoAuth = { error?: string; mensaje?: string } | undefined;
 
@@ -30,7 +31,9 @@ export async function registrarse(_prevState: EstadoAuth, formData: FormData): P
   const password2 = String(formData.get("password2") ?? "");
 
   if (nombre.length < 2) return { error: "Escribí tu nombre y apellido." };
-  if (telefono.replace(/\D/g, "").length < 10) return { error: "Revisá el número de WhatsApp (código de área + número)." };
+  if (!normalizarWhatsApp(telefono)) {
+    return { error: "Revisá el número de WhatsApp: código de área + número, sin el 0 ni el 15 (ej: 341 555 1234)." };
+  }
   if (!email.includes("@")) return { error: "Revisá el email." };
   if (password.length < 6) return { error: "La contraseña tiene que tener al menos 6 caracteres." };
   if (password !== password2) return { error: "Las contraseñas no coinciden." };

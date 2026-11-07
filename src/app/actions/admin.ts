@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getUsuarioActual } from "@/lib/auth";
+import { normalizarWhatsApp } from "@/lib/telefono";
 
 export type EstadoCancelar = { error?: string } | undefined;
 
@@ -99,6 +100,9 @@ export async function crearTurnoAdmin(_prevState: EstadoTurnoAdmin, formData: Fo
   if (!servicioId || !fecha || !horaInicio || !duracionMin || !precioTotal || !nombre || !telefono) {
     return { error: "Completá servicio, día, hora, nombre y WhatsApp." };
   }
+  if (!normalizarWhatsApp(telefono)) {
+    return { error: "Revisá el número de WhatsApp: código de área + número, sin el 0 ni el 15 (ej: 341 555 1234)." };
+  }
 
   const horaInicioMin = aMin(horaInicio);
   const supabase = await createClient();
@@ -139,6 +143,9 @@ export async function actualizarTurnoAdmin(
     datosTurnoDesdeForm(formData);
   if (!servicioId || !fecha || !horaInicio || !duracionMin || !precioTotal || !nombre || !telefono) {
     return { error: "Completá servicio, día, hora, nombre y WhatsApp." };
+  }
+  if (!normalizarWhatsApp(telefono)) {
+    return { error: "Revisá el número de WhatsApp: código de área + número, sin el 0 ni el 15 (ej: 341 555 1234)." };
   }
 
   const horaInicioMin = aMin(horaInicio);
