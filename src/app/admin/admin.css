@@ -482,7 +482,7 @@
 
 .ln-admin-horario-fila {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
   padding: 8px 0;
@@ -498,6 +498,13 @@
   font-weight: 500;
   flex: none;
   width: 110px;
+  padding-top: 4px;
+}
+.ln-admin-horario-tramos {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
 }
 .ln-admin-horario-horas {
   display: flex;
@@ -505,6 +512,31 @@
   gap: 8px;
   font-size: 13px;
   color: var(--suave);
+}
+.ln-admin-tramo-quitar {
+  border: none;
+  background: none;
+  color: var(--suave);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 2px 4px;
+  line-height: 1;
+}
+.ln-admin-tramo-quitar:hover {
+  color: var(--rosa-osc);
+}
+.ln-admin-tramo-agregar {
+  border: none;
+  background: none;
+  color: var(--rosa-osc);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 2px 0;
+  text-align: right;
+}
+.ln-admin-tramo-agregar:hover {
+  text-decoration: underline;
 }
 .ln-admin-hora-selector {
   display: inline-flex;

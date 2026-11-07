@@ -10,24 +10,40 @@ export async function guardarHorarios(_prevState: EstadoConfig, formData: FormDa
   const usuario = await getUsuarioActual();
   if (!usuario || usuario.rol !== "admin") return { error: "No tenés permiso para hacer esto." };
 
-  const filas: { dia_semana: number; hora_inicio: string | null; hora_fin: string | null }[] = [];
+  const filas: { dia_semana: number; tramo: number; hora_inicio: string; hora_fin: string }[] = [];
   for (let dia = 0; dia <= 6; dia++) {
     const abierto = formData.get(`abierto_${dia}`) === "on";
-    if (!abierto) {
-      filas.push({ dia_semana: dia, hora_inicio: null, hora_fin: null });
-      continue;
+    if (!abierto) continue;
+
+    const tramos: { inicio: string; fin: string }[] = [];
+    for (let i = 0; formData.has(`inicio_${dia}_${i}`); i++) {
+      const inicio = String(formData.get(`inicio_${dia}_${i}`) ?? "");
+      const fin = String(formData.get(`fin_${dia}_${i}`) ?? "");
+      if (!inicio || !fin || inicio >= fin) {
+        return { error: "Revisá los horarios: el de cierre tiene que ser después del de apertura." };
+      }
+      tramos.push({ inicio, fin });
     }
-    const inicio = String(formData.get(`inicio_${dia}`) ?? "");
-    const fin = String(formData.get(`fin_${dia}`) ?? "");
-    if (!inicio || !fin || inicio >= fin) {
-      return { error: "Revisá los horarios: el de cierre tiene que ser después del de apertura." };
+    if (tramos.length === 0) {
+      return { error: "Agregá al menos una franja horaria para los días abiertos." };
     }
-    filas.push({ dia_semana: dia, hora_inicio: inicio, hora_fin: fin });
+
+    tramos.sort((a, b) => a.inicio.localeCompare(b.inicio));
+    for (let i = 0; i < tramos.length; i++) {
+      if (i > 0 && tramos[i].inicio < tramos[i - 1].fin) {
+        return { error: "Las franjas horarias de un mismo día no pueden superponerse." };
+      }
+      filas.push({ dia_semana: dia, tramo: i + 1, hora_inicio: tramos[i].inicio, hora_fin: tramos[i].fin });
+    }
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.from("horarios").upsert(filas, { onConflict: "dia_semana" });
-  if (error) return { error: "No se pudo guardar. Probá de nuevo." };
+  const { error: errorBorrado } = await supabase.from("horarios").delete().gte("dia_semana", 0);
+  if (errorBorrado) return { error: "No se pudo guardar. Probá de nuevo." };
+  if (filas.length > 0) {
+    const { error } = await supabase.from("horarios").insert(filas);
+    if (error) return { error: "No se pudo guardar. Probá de nuevo." };
+  }
 
   revalidatePath("/admin/configuracion");
   return { ok: true };

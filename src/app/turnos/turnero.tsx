@@ -79,7 +79,7 @@ const INTERVALO = 30; // cada cuántos minutos arranca un turno
 
 export type ServicioDB = { id: number; nombre: string; precio: number; duracionMin: number };
 export type CategoriaDB = { id: number; nombre: string; nota: string | null; sinRetiro: boolean; items: ServicioDB[] };
-export type HorariosSemana = Record<number, [string, string] | null>;
+export type HorariosSemana = Record<number, [string, string][]>;
 export type Ocupado = [string, number]; // "AAAA-MM-DD HH:MM", duración en minutos
 
 const PASOS = [
@@ -151,11 +151,9 @@ export default function Turnero({
   function horasLibres(d: Date): { t: number; libre: boolean }[] {
     if (!servicioActual) return [];
     if (diasCerradosSet.has(iso(d))) return [];
-    const h = horarios[d.getDay()];
-    if (!h) return [];
+    const tramos = horarios[d.getDay()];
+    if (!tramos || tramos.length === 0) return [];
     const dur = servicioActual.dur;
-    const ini = aMin(h[0]);
-    const fin = aMin(h[1]);
     const k = iso(d);
     const ahora = new Date();
     const esHoy = iso(ahora) === k;
@@ -165,9 +163,13 @@ export default function Turnero({
       return [s, s + o[1]];
     });
     const out: { t: number; libre: boolean }[] = [];
-    for (let t = ini; t + dur <= fin; t += INTERVALO) {
-      const libre = !ocup.some(([a, b]) => t < b && t + dur > a) && !(esHoy && t < minAhora);
-      out.push({ t, libre });
+    for (const [horaIni, horaFin] of tramos) {
+      const ini = aMin(horaIni);
+      const fin = aMin(horaFin);
+      for (let t = ini; t + dur <= fin; t += INTERVALO) {
+        const libre = !ocup.some(([a, b]) => t < b && t + dur > a) && !(esHoy && t < minAhora);
+        out.push({ t, libre });
+      }
     }
     return out.some((x) => x.libre) ? out : [];
   }
@@ -218,7 +220,7 @@ export default function Turnero({
   function diaHabilitado(fecha: string): boolean {
     if (!hoyISO || fecha < hoyISO || fecha > horizonHastaISO) return false;
     const d = new Date(`${fecha}T12:00`);
-    return !!horarios[d.getDay()] && horasLibres(d).length > 0;
+    return (horarios[d.getDay()]?.length ?? 0) > 0 && horasLibres(d).length > 0;
   }
 
   let barraDetalle = "";
