@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NOMBRES_MES, iso, primerDiaDelMes, sumarMeses, ultimoDiaDelMes } from "@/lib/calendario";
-import Calendario, { type CategoriaCatalogo, type TurnoAgenda } from "./agenda";
+import Calendario, { type CategoriaCatalogo, type HorariosSemana, type TurnoAgenda } from "./agenda";
 
 const capitalizar = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
@@ -42,24 +42,31 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   const siguiente = sumarMeses(anio, mes, 1);
 
   const supabase = await createClient();
-  const [{ data }, categoriasRes, serviciosRes, diasCerradosRes] = await Promise.all([
-    supabase
-      .from("turnos")
-      .select(
-        "id, fecha, hora_inicio, duracion_min, precio_total, nombre, telefono, nota, estado, servicio_id, viene_con_unas_puestas, servicio:servicios(nombre, categoria:categorias_servicio(nombre)), retiro:retiros(nombre)",
-      )
-      .gte("fecha", primerDiaDelMes(anio, mes))
-      .lte("fecha", ultimoDiaDelMes(anio, mes))
-      .order("fecha", { ascending: true })
-      .order("hora_inicio", { ascending: true }),
-    supabase.from("categorias_servicio").select("id, nombre").order("orden"),
-    supabase.from("servicios").select("id, categoria_id, nombre, precio, duracion_min").order("orden"),
-    supabase
-      .from("dias_cerrados")
-      .select("fecha")
-      .gte("fecha", primerDiaDelMes(anio, mes))
-      .lte("fecha", ultimoDiaDelMes(anio, mes)),
-  ]);
+  const [{ data }, categoriasRes, serviciosRes, diasCerradosRes, horariosRes, horariosBloqueadosRes] =
+    await Promise.all([
+      supabase
+        .from("turnos")
+        .select(
+          "id, fecha, hora_inicio, duracion_min, precio_total, nombre, telefono, nota, estado, servicio_id, viene_con_unas_puestas, servicio:servicios(nombre, categoria:categorias_servicio(nombre)), retiro:retiros(nombre)",
+        )
+        .gte("fecha", primerDiaDelMes(anio, mes))
+        .lte("fecha", ultimoDiaDelMes(anio, mes))
+        .order("fecha", { ascending: true })
+        .order("hora_inicio", { ascending: true }),
+      supabase.from("categorias_servicio").select("id, nombre").order("orden"),
+      supabase.from("servicios").select("id, categoria_id, nombre, precio, duracion_min").order("orden"),
+      supabase
+        .from("dias_cerrados")
+        .select("fecha")
+        .gte("fecha", primerDiaDelMes(anio, mes))
+        .lte("fecha", ultimoDiaDelMes(anio, mes)),
+      supabase.from("horarios").select("dia_semana, hora_inicio, hora_fin").order("dia_semana").order("tramo"),
+      supabase
+        .from("horarios_bloqueados")
+        .select("fecha, hora_inicio")
+        .gte("fecha", primerDiaDelMes(anio, mes))
+        .lte("fecha", ultimoDiaDelMes(anio, mes)),
+    ]);
 
   const filas = (data ?? []) as unknown as FilaTurnoDB[];
 
@@ -97,6 +104,16 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
 
   const diasCerrados = (diasCerradosRes.data ?? []).map((d) => d.fecha);
 
+  const horarios: HorariosSemana = {};
+  for (const h of horariosRes.data ?? []) {
+    const arr = horarios[h.dia_semana] ?? (horarios[h.dia_semana] = []);
+    arr.push([h.hora_inicio.slice(0, 5), h.hora_fin.slice(0, 5)]);
+  }
+
+  const horariosBloqueados = (horariosBloqueadosRes.data ?? []).map(
+    (h) => `${h.fecha} ${h.hora_inicio.slice(0, 5)}`,
+  );
+
   return (
     <div>
       <h1>Agenda</h1>
@@ -107,6 +124,8 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
         turnos={turnos}
         categorias={categorias}
         diasCerrados={diasCerrados}
+        horarios={horarios}
+        horariosBloqueados={horariosBloqueados}
         anio={anio}
         mes={mes}
         mesLabel={`${capitalizar(NOMBRES_MES[mes - 1])} ${anio}`}

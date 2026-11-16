@@ -6,11 +6,21 @@ import { useFormStatus } from "react-dom";
 import {
   actualizarTurnoAdmin,
   alternarDiaCerrado,
+  alternarHorarioBloqueado,
   cancelarTurno,
   crearTurnoAdmin,
+  type EstadoHorarioBloqueado,
   type EstadoTurnoAdmin,
 } from "@/app/actions/admin";
 import { DIAS_SEMANA_CORTO, grillaMes } from "@/lib/calendario";
+
+// Franjas cada 30 min, igual que en /turnos: la manicura ve la agenda del día
+// con la misma grilla de horarios que ve la clienta al reservar.
+const INTERVALO = 30;
+
+export type HorariosSemana = Record<number, [string, string][]>;
+
+type EstadoHorario = "ocupado" | "bloqueado" | "libre";
 
 export type TurnoAgenda = {
   id: string;
@@ -32,6 +42,10 @@ export type CategoriaCatalogo = { id: number; nombre: string; servicios: Servici
 const plata = (n: number) => "$" + n.toLocaleString("es-AR");
 const aHora = (min: number) =>
   String(Math.floor(min / 60)).padStart(2, "0") + ":" + String(min % 60).padStart(2, "0");
+const aMinHHMM = (hhmm: string) => {
+  const [h, m] = hhmm.split(":").map(Number);
+  return h * 60 + m;
+};
 const durTxt = (m: number) => (m < 60 ? m + " min" : Math.floor(m / 60) + " h" + (m % 60 ? " " + (m % 60) + " min" : ""));
 const capitalizar = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
@@ -39,6 +53,8 @@ type Props = {
   turnos: TurnoAgenda[];
   categorias: CategoriaCatalogo[];
   diasCerrados: string[];
+  horarios: HorariosSemana;
+  horariosBloqueados: string[]; // "AAAA-MM-DD HH:MM"
   anio: number;
   mes: number; // 1-12
   mesLabel: string;
@@ -51,6 +67,8 @@ export default function Calendario({
   turnos,
   categorias,
   diasCerrados,
+  horarios,
+  horariosBloqueados,
   anio,
   mes,
   mesLabel,
@@ -60,6 +78,7 @@ export default function Calendario({
 }: Props) {
   const semanas = grillaMes(anio, mes);
   const cerrados = new Set(diasCerrados);
+  const bloqueados = new Set(horariosBloqueados);
 
   const diaConTurnos = (fecha: string) => turnos.some((t) => t.fecha === fecha);
   const hoyEstaEnEsteMes = estaEnMes(hoyISO, anio, mes);
@@ -70,6 +89,29 @@ export default function Calendario({
   const turnosDelDia = diaSeleccionado
     ? turnos.filter((t) => t.fecha === diaSeleccionado).sort((a, b) => a.horaInicio - b.horaInicio)
     : [];
+
+  function franjasDelDia(fecha: string): { t: number; estado: EstadoHorario }[] {
+    const diaSemana = new Date(`${fecha}T12:00`).getDay();
+    const tramos = horarios[diaSemana] ?? [];
+    const confirmados = turnos.filter((t) => t.fecha === fecha && t.estado === "confirmado");
+    const out: { t: number; estado: EstadoHorario }[] = [];
+    for (const [horaIni, horaFin] of tramos) {
+      const ini = aMinHHMM(horaIni);
+      const fin = aMinHHMM(horaFin);
+      for (let t = ini; t + INTERVALO <= fin; t += INTERVALO) {
+        const ocupado = confirmados.some((c) => t < c.horaInicio + c.duracionMin && t + INTERVALO > c.horaInicio);
+        const estado: EstadoHorario = ocupado
+          ? "ocupado"
+          : bloqueados.has(`${fecha} ${aHora(t)}`)
+            ? "bloqueado"
+            : "libre";
+        out.push({ t, estado });
+      }
+    }
+    return out;
+  }
+
+  const franjas = diaSeleccionado ? franjasDelDia(diaSeleccionado) : [];
 
   return (
     <div>
@@ -138,6 +180,21 @@ export default function Calendario({
               )}
             </div>
           </div>
+
+          {!cerrados.has(diaSeleccionado) && (
+            <div className="ln-admin-horarios-sec">
+              <h3 className="ln-admin-horarios-tit">Horarios</h3>
+              {franjas.length === 0 ? (
+                <div className="ln-admin-vacio">No hay horario de atención configurado este día.</div>
+              ) : (
+                <div className="ln-admin-horas">
+                  {franjas.map((f) => (
+                    <FranjaHorario key={f.t} fecha={diaSeleccionado} t={f.t} estado={f.estado} />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {formularioAbierto === "nuevo" && (
             <FormTurno
@@ -274,6 +331,52 @@ function BotonToggleDia({ cerrado, onClick }: { cerrado: boolean; onClick: () =>
     >
       {pending ? "Guardando…" : cerrado ? "Reabrir día" : "Cerrar día"}
     </button>
+  );
+}
+
+function FranjaHorario({ fecha, t, estado }: { fecha: string; t: number; estado: EstadoHorario }) {
+  const [resultado, accionar] = useActionState<EstadoHorarioBloqueado, FormData>(alternarHorarioBloqueado, undefined);
+  const [confirmando, setConfirmando] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+  const bloqueado = estado === "bloqueado";
+
+  if (estado === "ocupado") {
+    return (
+      <button type="button" className="ln-admin-hora ln-admin-hora-ocupado" disabled>
+        {aHora(t)}
+      </button>
+    );
+  }
+
+  return (
+    <>
+      <form ref={formRef} action={accionar}>
+        <input type="hidden" name="fecha" value={fecha} />
+        <input type="hidden" name="horaInicio" value={aHora(t)} />
+        <input type="hidden" name="bloqueadoActual" value={String(bloqueado)} />
+        <button
+          type="button"
+          className={`ln-admin-hora ${bloqueado ? "ln-admin-hora-bloqueado" : ""}`}
+          onClick={() => (bloqueado ? formRef.current?.requestSubmit() : setConfirmando(true))}
+        >
+          {aHora(t)}
+        </button>
+      </form>
+      {resultado?.error && <div className="ln-admin-error">{resultado.error}</div>}
+      {confirmando && (
+        <ModalConfirmar
+          titulo="¿Cerrar este horario?"
+          mensaje={`Las ${aHora(t)} hs ya no van a poder reservarse por la web.`}
+          textoConfirmar="Sí, cerrar"
+          peligro
+          onConfirmar={() => {
+            setConfirmando(false);
+            formRef.current?.requestSubmit();
+          }}
+          onCancelar={() => setConfirmando(false)}
+        />
+      )}
+    </>
   );
 }
 

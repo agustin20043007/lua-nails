@@ -50,6 +50,36 @@ export async function alternarDiaCerrado(
   return undefined;
 }
 
+export type EstadoHorarioBloqueado = { error?: string } | undefined;
+
+export async function alternarHorarioBloqueado(
+  _prevState: EstadoHorarioBloqueado,
+  formData: FormData,
+): Promise<EstadoHorarioBloqueado> {
+  const usuario = await getUsuarioActual();
+  if (!usuario || usuario.rol !== "admin") return { error: "No tenés permiso para hacer esto." };
+
+  const fecha = String(formData.get("fecha") ?? "");
+  const horaInicio = String(formData.get("horaInicio") ?? "");
+  const bloqueadoActual = formData.get("bloqueadoActual") === "true";
+  if (!fecha || !horaInicio) return { error: "Falta la fecha o el horario." };
+
+  const supabase = await createClient();
+  const { error } = bloqueadoActual
+    ? await supabase.from("horarios_bloqueados").delete().eq("fecha", fecha).eq("hora_inicio", horaInicio)
+    : await supabase.from("horarios_bloqueados").insert({ fecha, hora_inicio: horaInicio });
+
+  if (error) {
+    return {
+      error: bloqueadoActual ? "No se pudo reabrir el horario. Probá de nuevo." : "No se pudo cerrar el horario. Probá de nuevo.",
+    };
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/turnos");
+  return undefined;
+}
+
 export type EstadoTurnoAdmin = { error?: string; ok?: boolean } | undefined;
 
 const aMin = (hhmm: string) => {

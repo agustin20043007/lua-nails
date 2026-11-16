@@ -472,6 +472,49 @@
   white-space: nowrap;
 }
 
+.ln-admin-horarios-sec {
+  margin-bottom: 16px;
+}
+.ln-admin-horarios-tit {
+  font-family: var(--font-cormorant), serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--rosa-osc);
+  margin: 0 0 8px;
+}
+.ln-admin-horas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(82px, 1fr));
+  gap: 8px;
+}
+.ln-admin-hora {
+  padding: 10px 0;
+  border-radius: 12px;
+  border: 1px solid var(--borde);
+  background: #fff;
+  font: inherit;
+  font-weight: 500;
+  color: inherit;
+  cursor: pointer;
+}
+.ln-admin-hora:hover {
+  border-color: var(--rosa);
+}
+.ln-admin-hora-ocupado {
+  opacity: 0.45;
+  text-decoration: line-through;
+  cursor: not-allowed;
+}
+.ln-admin-hora-ocupado:hover {
+  border-color: var(--borde);
+}
+.ln-admin-hora-bloqueado {
+  background: #f1eceb;
+  border-color: #e3d6d4;
+  color: var(--suave);
+  text-decoration: line-through;
+}
+
 .ln-admin-vacio {
   color: var(--suave);
   font-size: 14px;
