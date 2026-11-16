@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NOMBRES_MES, iso, primerDiaDelMes, sumarMeses, ultimoDiaDelMes } from "@/lib/calendario";
-import Calendario, { type CategoriaCatalogo, type HorariosSemana, type TurnoAgenda } from "./agenda";
+import Calendario, { type CategoriaCatalogo, type ClientaCatalogo, type HorariosSemana, type TurnoAgenda } from "./agenda";
 
 const capitalizar = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
@@ -42,7 +42,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   const siguiente = sumarMeses(anio, mes, 1);
 
   const supabase = await createClient();
-  const [{ data }, categoriasRes, serviciosRes, diasCerradosRes, horariosRes, horariosBloqueadosRes] =
+  const [{ data }, categoriasRes, serviciosRes, diasCerradosRes, horariosRes, horariosBloqueadosRes, clientasRes] =
     await Promise.all([
       supabase
         .from("turnos")
@@ -66,6 +66,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
         .select("fecha, hora_inicio")
         .gte("fecha", primerDiaDelMes(anio, mes))
         .lte("fecha", ultimoDiaDelMes(anio, mes)),
+      supabase.from("profiles").select("id, nombre, telefono").eq("rol", "clienta").order("nombre"),
     ]);
 
   const filas = (data ?? []) as unknown as FilaTurnoDB[];
@@ -114,6 +115,12 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
     (h) => `${h.fecha} ${h.hora_inicio.slice(0, 5)}`,
   );
 
+  const clientas: ClientaCatalogo[] = (clientasRes.data ?? []).map((c) => ({
+    id: c.id,
+    nombre: c.nombre,
+    telefono: c.telefono ?? "",
+  }));
+
   return (
     <div>
       <h1>Agenda</h1>
@@ -123,6 +130,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
         key={`${anio}-${mes}`}
         turnos={turnos}
         categorias={categorias}
+        clientas={clientas}
         diasCerrados={diasCerrados}
         horarios={horarios}
         horariosBloqueados={horariosBloqueados}
