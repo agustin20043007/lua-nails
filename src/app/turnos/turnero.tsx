@@ -513,8 +513,8 @@ function ConfirmarTurno({
       <section>
         <div className={styles.ok}>
           <div className={styles.icono}>♡</div>
-          <h2>¡Turno reservado!</h2>
-          <p>{avisado ? "Te esperamos." : "Para terminar, avisanos por WhatsApp."}</p>
+          <h2>{avisado ? "¡Turno reservado!" : "¡Ya casi!"}</h2>
+          <p>{avisado ? "Te esperamos." : "Para reservar tu turno, avisanos por WhatsApp."}</p>
         </div>
         <div className={styles.resumen}>
           {resumenFilas.map(([k, v]) => (
