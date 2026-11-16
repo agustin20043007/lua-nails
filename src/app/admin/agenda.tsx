@@ -38,6 +38,7 @@ export type TurnoAgenda = {
 
 export type ServicioCatalogo = { id: number; nombre: string; precio: number; duracionMin: number };
 export type CategoriaCatalogo = { id: number; nombre: string; servicios: ServicioCatalogo[] };
+export type ClientaCatalogo = { id: string; nombre: string; telefono: string };
 
 const plata = (n: number) => "$" + n.toLocaleString("es-AR");
 const aHora = (min: number) =>
@@ -52,6 +53,7 @@ const capitalizar = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 type Props = {
   turnos: TurnoAgenda[];
   categorias: CategoriaCatalogo[];
+  clientas: ClientaCatalogo[];
   diasCerrados: string[];
   horarios: HorariosSemana;
   horariosBloqueados: string[]; // "AAAA-MM-DD HH:MM"
@@ -66,6 +68,7 @@ type Props = {
 export default function Calendario({
   turnos,
   categorias,
+  clientas,
   diasCerrados,
   horarios,
   horariosBloqueados,
@@ -199,6 +202,7 @@ export default function Calendario({
           {formularioAbierto === "nuevo" && (
             <FormTurno
               categorias={categorias}
+              clientas={clientas}
               fechaInicial={diaSeleccionado}
               onListo={() => setFormularioAbierto(null)}
               onCancelar={() => setFormularioAbierto(null)}
@@ -213,6 +217,7 @@ export default function Calendario({
                 <FormTurno
                   key={t.id}
                   categorias={categorias}
+                  clientas={clientas}
                   turno={t}
                   fechaInicial={t.fecha}
                   onListo={() => setFormularioAbierto(null)}
@@ -449,12 +454,14 @@ function BotonCancelar({ deshabilitado, onClick }: { deshabilitado: boolean; onC
 
 function FormTurno({
   categorias,
+  clientas,
   turno,
   fechaInicial,
   onListo,
   onCancelar,
 }: {
   categorias: CategoriaCatalogo[];
+  clientas: ClientaCatalogo[];
   turno?: TurnoAgenda;
   fechaInicial: string;
   onListo: () => void;
@@ -471,6 +478,20 @@ function FormTurno({
   const [servicioId, setServicioId] = useState<number | undefined>(servicioInicial?.id);
   const [duracionMin, setDuracionMin] = useState(turno?.duracionMin ?? servicioInicial?.duracionMin ?? 30);
   const [precioTotal, setPrecioTotal] = useState(turno?.precioTotal ?? servicioInicial?.precio ?? 0);
+  const [nombre, setNombre] = useState(turno?.nombreCliente ?? "");
+  const [telefono, setTelefono] = useState(turno?.telefono ?? "");
+  const [sugerenciasAbiertas, setSugerenciasAbiertas] = useState(false);
+
+  const sugerencias =
+    !turno && sugerenciasAbiertas
+      ? clientas.filter((c) => c.nombre.toLowerCase().includes(nombre.trim().toLowerCase())).slice(0, 6)
+      : [];
+
+  function elegirClienta(c: ClientaCatalogo) {
+    setNombre(c.nombre);
+    setTelefono(c.telefono);
+    setSugerenciasAbiertas(false);
+  }
 
   useEffect(() => {
     if (estado?.ok) onListo();
@@ -557,13 +578,45 @@ function FormTurno({
       </div>
 
       <div className="ln-admin-campo-fila">
-        <div className="ln-admin-campo">
+        <div className="ln-admin-campo ln-admin-clienta-combo">
           <label htmlFor="nombre">Nombre de la clienta</label>
-          <input id="nombre" name="nombre" type="text" defaultValue={turno?.nombreCliente} required />
+          <input
+            id="nombre"
+            name="nombre"
+            type="text"
+            autoComplete="off"
+            value={nombre}
+            onChange={(e) => {
+              setNombre(e.target.value);
+              setSugerenciasAbiertas(true);
+            }}
+            onFocus={() => setSugerenciasAbiertas(true)}
+            onBlur={() => setTimeout(() => setSugerenciasAbiertas(false), 150)}
+            required
+          />
+          {sugerencias.length > 0 && (
+            <ul className="ln-admin-clienta-sugerencias">
+              {sugerencias.map((c) => (
+                <li key={c.id}>
+                  <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => elegirClienta(c)}>
+                    <span>{c.nombre}</span>
+                    <span className="ln-admin-clienta-sugerencia-tel">{c.telefono}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
         <div className="ln-admin-campo">
           <label htmlFor="telefono">WhatsApp</label>
-          <input id="telefono" name="telefono" type="tel" defaultValue={turno?.telefono} required />
+          <input
+            id="telefono"
+            name="telefono"
+            type="tel"
+            value={telefono}
+            onChange={(e) => setTelefono(e.target.value)}
+            required
+          />
         </div>
       </div>
 
