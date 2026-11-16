@@ -113,6 +113,7 @@ type Props = {
   horarios: HorariosSemana;
   ocupados: Ocupado[];
   diasCerrados: string[];
+  horariosBloqueados: string[]; // "AAAA-MM-DD HH:MM"
 };
 
 export default function Turnero({
@@ -122,8 +123,10 @@ export default function Turnero({
   horarios,
   ocupados,
   diasCerrados,
+  horariosBloqueados,
 }: Props) {
   const diasCerradosSet = useMemo(() => new Set(diasCerrados), [diasCerrados]);
+  const bloqueadosSet = useMemo(() => new Set(horariosBloqueados), [horariosBloqueados]);
   const [paso, setPaso] = useState(1);
   const [catIdx, setCatIdx] = useState<number | null>(null);
   const [itemIdx, setItemIdx] = useState<number | null>(null);
@@ -162,12 +165,18 @@ export default function Turnero({
       const s = aMin(o[0].slice(11));
       return [s, s + o[1]];
     });
+    const bloqueado = (t: number) => {
+      for (let m = t; m < t + dur; m += INTERVALO) {
+        if (bloqueadosSet.has(`${k} ${aHora(m)}`)) return true;
+      }
+      return false;
+    };
     const out: { t: number; libre: boolean }[] = [];
     for (const [horaIni, horaFin] of tramos) {
       const ini = aMin(horaIni);
       const fin = aMin(horaFin);
       for (let t = ini; t + dur <= fin; t += INTERVALO) {
-        const libre = !ocup.some(([a, b]) => t < b && t + dur > a) && !(esHoy && t < minAhora);
+        const libre = !ocup.some(([a, b]) => t < b && t + dur > a) && !(esHoy && t < minAhora) && !bloqueado(t);
         out.push({ t, libre });
       }
     }

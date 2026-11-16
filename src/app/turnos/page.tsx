@@ -16,13 +16,15 @@ export default async function TurnosPage() {
   const siguiente = sumarMeses(hoy.getFullYear(), hoy.getMonth() + 1, 1);
   const hastaISO = ultimoDiaDelMes(siguiente.anio, siguiente.mes);
 
-  const [categoriasRes, serviciosRes, horariosRes, ocupadosRes, diasCerradosRes] = await Promise.all([
-    supabase.from("categorias_servicio").select("id, nombre, nota, sin_retiro").order("orden"),
-    supabase.from("servicios").select("id, categoria_id, nombre, precio, duracion_min").order("orden"),
-    supabase.from("horarios").select("dia_semana, hora_inicio, hora_fin").order("dia_semana").order("tramo"),
-    supabase.rpc("horarios_ocupados", { desde: iso(hoy), hasta: hastaISO }),
-    supabase.from("dias_cerrados").select("fecha").gte("fecha", iso(hoy)).lte("fecha", hastaISO),
-  ]);
+  const [categoriasRes, serviciosRes, horariosRes, ocupadosRes, diasCerradosRes, horariosBloqueadosRes] =
+    await Promise.all([
+      supabase.from("categorias_servicio").select("id, nombre, nota, sin_retiro").order("orden"),
+      supabase.from("servicios").select("id, categoria_id, nombre, precio, duracion_min").order("orden"),
+      supabase.from("horarios").select("dia_semana, hora_inicio, hora_fin").order("dia_semana").order("tramo"),
+      supabase.rpc("horarios_ocupados", { desde: iso(hoy), hasta: hastaISO }),
+      supabase.from("dias_cerrados").select("fecha").gte("fecha", iso(hoy)).lte("fecha", hastaISO),
+      supabase.from("horarios_bloqueados").select("fecha, hora_inicio").gte("fecha", iso(hoy)).lte("fecha", hastaISO),
+    ]);
 
   const servicios = serviciosRes.data ?? [];
   const categorias: CategoriaDB[] = (categoriasRes.data ?? []).map((c) => ({
@@ -50,6 +52,10 @@ export default async function TurnosPage() {
 
   const diasCerrados = (diasCerradosRes.data ?? []).map((d) => d.fecha);
 
+  const horariosBloqueados = (horariosBloqueadosRes.data ?? []).map(
+    (h) => `${h.fecha} ${h.hora_inicio.slice(0, 5)}`,
+  );
+
   return (
     <Turnero
       nombre={usuario.nombre}
@@ -58,6 +64,7 @@ export default async function TurnosPage() {
       horarios={horarios}
       ocupados={ocupados}
       diasCerrados={diasCerrados}
+      horariosBloqueados={horariosBloqueados}
     />
   );
 }
