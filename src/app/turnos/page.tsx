@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { getUsuarioActual } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { iso, sumarMeses, ultimoDiaDelMes } from "@/lib/calendario";
+import { hoyArgentina, iso, sumarMeses, ultimoDiaDelMes } from "@/lib/calendario";
 import Turnero, { type CategoriaDB, type HorariosSemana, type Ocupado } from "./turnero";
 
 export default async function TurnosPage() {
@@ -12,7 +12,7 @@ export default async function TurnosPage() {
 
   // El calendario deja elegir este mes y el que sigue, así que traemos los
   // ocupados hasta el último día de ese segundo mes.
-  const hoy = new Date();
+  const hoy = hoyArgentina();
   const siguiente = sumarMeses(hoy.getFullYear(), hoy.getMonth() + 1, 1);
   const hastaISO = ultimoDiaDelMes(siguiente.anio, siguiente.mes);
 

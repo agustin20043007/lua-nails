@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { getUsuarioActual } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import MenuCliente from "@/app/menu-cliente";
-import { iso } from "@/lib/calendario";
+import { hoyArgentina, iso } from "@/lib/calendario";
 import "./mis-turnos.css";
 
 const plata = (n: number) => "$" + n.toLocaleString("es-AR");
@@ -44,7 +44,7 @@ export default async function MisTurnosPage() {
     .order("fecha", { ascending: false })
     .order("hora_inicio", { ascending: false });
 
-  const hoyISO = iso(new Date());
+  const hoyISO = iso(hoyArgentina());
 
   const turnos: Turno[] = ((data ?? []) as unknown as FilaTurnoDB[]).map((t) => {
     const catNombre = t.servicio?.categoria?.nombre ?? "";

@@ -22,6 +22,22 @@ export const DIAS_SEMANA_CORTO = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "S�
 export const iso = (d: Date) =>
   d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
 
+// El servidor puede correr en otro timezone (ej. UTC en Vercel): usar
+// new Date() ahí da el día equivocado apenas pasan las 21hs de Argentina.
+// Esta función arma un Date cuyos componentes locales (año/mes/día) son los
+// de Argentina, para que el resto del código (que lee con getFullYear/
+// getMonth/getDate) siempre vea el día correcto sin importar dónde corra.
+export function hoyArgentina(): Date {
+  const partes = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Argentina/Buenos_Aires",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+  const valor = (tipo: string) => Number(partes.find((p) => p.type === tipo)?.value);
+  return new Date(valor("year"), valor("month") - 1, valor("day"));
+}
+
 export function sumarMeses(anio: number, mes: number, delta: number): { anio: number; mes: number } {
   const total = (mes - 1) + delta;
   const anioNuevo = anio + Math.floor(total / 12);

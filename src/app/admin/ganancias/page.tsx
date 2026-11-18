@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { NOMBRES_MES, iso, primerDiaDelMes, sumarMeses, ultimoDiaDelMes } from "@/lib/calendario";
+import { NOMBRES_MES, hoyArgentina, iso, primerDiaDelMes, sumarMeses, ultimoDiaDelMes } from "@/lib/calendario";
 
 const capitalizar = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 const plata = (n: number) => "$" + n.toLocaleString("es-AR");
@@ -8,7 +8,7 @@ const sumarPrecios = (filas: { precio_total: number }[] | null) =>
   (filas ?? []).reduce((acc, f) => acc + f.precio_total, 0);
 
 export default async function GananciasPage({ searchParams }: { searchParams: Promise<{ mes?: string }> }) {
-  const hoy = new Date();
+  const hoy = hoyArgentina();
   const hoyISO = iso(hoy);
 
   const { mes: mesParam } = await searchParams;
