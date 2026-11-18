@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { NOMBRES_MES, iso, primerDiaDelMes, sumarMeses, ultimoDiaDelMes } from "@/lib/calendario";
+import { NOMBRES_MES, hoyArgentina, iso, primerDiaDelMes, sumarMeses, ultimoDiaDelMes } from "@/lib/calendario";
 import Calendario, { type CategoriaCatalogo, type ClientaCatalogo, type HorariosSemana, type TurnoAgenda } from "./agenda";
 
 const capitalizar = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
@@ -26,7 +26,7 @@ const aMin = (hhmm: string) => {
 };
 
 export default async function AdminPage({ searchParams }: { searchParams: Promise<{ mes?: string }> }) {
-  const hoy = new Date();
+  const hoy = hoyArgentina();
   const hoyISO = iso(hoy);
 
   const { mes: mesParam } = await searchParams;

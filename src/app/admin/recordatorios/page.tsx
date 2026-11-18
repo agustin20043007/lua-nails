@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { iso } from "@/lib/calendario";
+import { hoyArgentina, iso } from "@/lib/calendario";
 import Recordatorios, { type TurnoRecordatorio } from "./recordatorios";
 
 const capitalizar = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
@@ -14,8 +14,7 @@ type FilaTurnoDB = {
 };
 
 export default async function RecordatoriosPage() {
-  const hoy = new Date();
-  hoy.setHours(0, 0, 0, 0);
+  const hoy = hoyArgentina();
   const manana = new Date(hoy);
   manana.setDate(manana.getDate() + 1);
   const mananaISO = iso(manana);
