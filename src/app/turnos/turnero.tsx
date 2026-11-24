@@ -506,7 +506,8 @@ function ConfirmarTurno({
       `• Horario: ${aHora(hora)} hs\n` +
       `• Total: ${plata(servicioActual.precio)}\n\n` +
       `Nombre: ${nombreCuenta}\nWhatsApp: ${telCuenta}` +
-      (notaTrim ? `\nComentario: ${notaTrim}` : "");
+      (notaTrim ? `\nComentario: ${notaTrim}` : "") +
+      `\n\nDirección: Gordillo 3607`;
     const linkWhatsApp = "https://wa.me/" + WHATSAPP + "?text=" + encodeURIComponent(msg);
 
     return (

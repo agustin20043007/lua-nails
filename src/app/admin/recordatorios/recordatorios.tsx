@@ -15,7 +15,8 @@ function mensajeRecordatorio(turno: TurnoRecordatorio, fechaLarga: string): stri
   const primerNombre = turno.nombreCliente.trim().split(" ")[0];
   return (
     `¡Hola ${primerNombre}! 💅 Te recordamos tu turno en Lua Nails ${fechaLarga.toLowerCase()} ` +
-    `a las ${turno.horaInicio} hs (${turno.servicioNombre}).\n\n¡Te esperamos! ☾`
+    `a las ${turno.horaInicio} hs (${turno.servicioNombre}).\n\n` +
+    `Dirección: Gordillo 3607\n\n¡Te esperamos! ☾`
   );
 }
 
